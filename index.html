@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TKD Scoreboard Pro - Oficial</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+    <style>
+        body { margin:0; font-family:'Segoe UI', Roboto, sans-serif; background:black; color:white; display:flex; height:100vh; overflow:hidden; }
+        .lado { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position: relative; }
+        .azul { background:#0033cc; }
+        .rojo { background:#a00000; }
+        .score { font-size:180px; font-weight: bold; line-height: 1; }
+        .nombre { font-size:40px; margin-bottom:10px; font-weight: bold; text-transform: uppercase; }
+        .gam { font-size:24px; background: rgba(0,0,0,0.4); padding: 5px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); }
+        
+        .centro { width:320px; background:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; border-left: 2px solid #333; border-right: 2px solid #333; z-index: 10; }
+        .timer { background:yellow; color:black; font-size:85px; padding:10px 30px; margin:15px; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 10px; }
+        
+        #qrcode { background: white; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .qr-label { font-size: 11px; margin-top: 5px; color: #888; }
+
+        button { cursor:pointer; border:none; border-radius:5px; font-weight: bold; transition: 0.2s; }
+        button:active { transform: scale(0.95); }
+        .control { background:#444; color:white; width: 85%; padding:12px; margin:4px; font-size: 14px; }
+        .penal { background:#ffaa00; color: black; padding: 10px 20px; font-size: 16px; }
+        .restar { background: #222; color: #888; border: 1px solid #444; padding: 5px 15px; margin-top: 10px; font-size: 12px; }
+        input { width: 80%; margin: 4px; padding: 8px; border-radius: 4px; border: none; background: #222; color: white; text-align: center; }
+
+        /* VISTA JUEZ (Móvil) */
+        #juez-ui { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:#111; z-index:9999; flex-direction: column; padding: 10px; box-sizing: border-box; }
+        .juez-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; flex: 1; }
+        .btn-juez { font-size: 30px; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 15px; }
+        .bj-azul { background: #0033cc; }
+        .bj-rojo { background: #a00000; }
+        .bj-puntos { font-size: 50px; display: block; }
+    </style>
+</head>
+<body>
+
+<div id="marcador-ui" style="display: flex; width: 100%;">
+    <div class="lado azul">
+        <div class="nombre" id="nAzul">AZUL</div>
+        <div class="score" id="azul">0</div>
+        <div class="gam">Gam-jeom: <span id="gAzul">0</span></div>
+        <button class="penal" onclick="penal('azul')">GAM-JEOM</button>
+        <button class="restar" onclick="restar('azul')">CORREGIR -1</button>
+    </div>
+
+    <div class="centro">
+        <div style="font-size: 18px; color: #aaa;">ROUND <span id="round">1</span></div>
+        <div class="timer" id="tiempo">120</div>
+        
+        <button class="control" style="background: #28a745;" onclick="start()">INICIAR TIEMPO</button>
+        <button class="control" onclick="pause()">PAUSAR</button>
+        <button class="control" onclick="reset()">RESET / SIG. ROUND</button>
+        
+        <div id="qrcode"></div>
+        <div class="qr-label">ESCANEAR PARA JUEZ</div>
+
+        <div style="margin-top: 15px; width: 100%; text-align: center;">
+            <input id="aname" placeholder="Nombre Azul">
+            <input id="rname" placeholder="Nombre Rojo">
+            <button class="control" onclick="setNombres()">ACTUALIZAR NOMBRES</button>
+        </div>
+    </div>
+
+    <div class="lado rojo">
+        <div class="nombre" id="nRojo">ROJO</div>
+        <div class="score" id="rojo">0</div>
+        <div class="gam">Gam-jeom: <span id="gRojo">0</span></div>
+        <button class="penal" onclick="penal('rojo')">GAM-JEOM</button>
+        <button class="restar" onclick="restar('rojo')">CORREGIR -1</button>
+    </div>
+</div>
+
+<div id="juez-ui">
+    <div style="text-align: center; padding: 10px; font-weight: bold; color: #555;">MODO JUEZ CONECTADO</div>
+    <div class="juez-grid">
+        <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 1)">AZUL<span class="bj-puntos">+1</span></button>
+        <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 2)">AZUL<span class="bj-puntos">+2</span></button>
+        <button class="btn-juez bj-rojo" onclick="enviarPunto('rojo', 1)">ROJO<span class="bj-puntos">+1</span></button>
+        <button class="btn-juez bj-rojo" onclick="enviarPunto('rojo', 2)">ROJO<span class="bj-puntos">+2</span></button>
+    </div>
+    <button class="control" style="margin-top: 10px; width: 100%;" onclick="window.location.reload()">RECONECTAR</button>
+</div>
+
+<script>
+// 1. CONFIGURACIÓN ABLY
+const API_KEY = 'lghMsA.rFblDA:Uo_Ya0lwt-osgx2EhIM1egWJb1pTR4seB8MQKN_Rqp8'; // Reemplaza esto
+const ably = new Ably.Realtime(API_KEY);
+const canal = ably.channels.get('tkd-match-oficial');
+
+// 2. ESTADO DEL JUEGO
+let rojo=0, azul=0, gRojo=0, gAzul=0, tiempo=120, intervalo=null, round=1;
+let registrosPuntos = []; 
+const VENTANA_TIEMPO = 2000; // 2 segundos de margen para coincidencia
+
+// 3. LÓGICA DE JUEZ (CLIENTE)
+function enviarPunto(equipo, puntos) {
+    if (navigator.vibrate) navigator.vibrate(60);
+    canal.publish('punto', { equipo, puntos });
+    
+    // Efecto visual rápido en el botón pulsado
+    event.currentTarget.style.opacity = "0.5";
+    setTimeout(() => { event.target.style.opacity = "1"; }, 100);
+}
+
+// 4. LÓGICA DE MARCADOR (SERVIDOR/RECEPCIÓN)
+canal.subscribe('punto', (msg) => {
+    const clic = {
+        equipo: msg.data.equipo,
+        puntos: msg.data.puntos,
+        idJuez: msg.connectionId,
+        timestamp: Date.now()
+    };
+    
+    registrosPuntos.push(clic);
+    validarCoincidencias(clic);
+});
+
+function validarCoincidencias(clicReciente) {
+    const ahora = Date.now();
+    // Limpiar antiguos
+    registrosPuntos = registrosPuntos.filter(c => (ahora - c.timestamp) < VENTANA_TIEMPO);
+
+    // Buscar coincidencias
+    const matches = registrosPuntos.filter(c => 
+        c.equipo === clicReciente.equipo && c.puntos === clicReciente.puntos
+    );
+
+    const juecesUnicos = new Set(matches.map(c => c.idJuez));
+
+    if (juecesUnicos.size >= 2) {
+        sumar(clicReciente.equipo, clicReciente.puntos);
+        // Borrar para que no cuente 3 veces si hay 3 jueces
+        registrosPuntos = registrosPuntos.filter(c => c.equipo !== clicReciente.equipo);
+    }
+}
+
+// 5. FUNCIONES DE CONTROL
+function actualizar(){
+    document.getElementById("rojo").innerText=rojo;
+    document.getElementById("azul").innerText=azul;
+    document.getElementById("gRojo").innerText=gRojo;
+    document.getElementById("gAzul").innerText=gAzul;
+    document.getElementById("tiempo").innerText=tiempo;
+    document.getElementById("round").innerText=round;
+}
+
+function sumar(e, p){
+    if(e==="rojo") rojo+=p; else azul+=p;
+    actualizar();
+}
+
+function restar(e){
+    if(e==="rojo") { if(rojo > 0) rojo--; }
+    else { if(azul > 0) azul--; }
+    actualizar();
+}
+
+function penal(e){
+    if(e==="rojo"){ gRojo++; azul++; }
+    else { gAzul++; rojo++; }
+    actualizar();
+}
+
+function start(){
+    if(intervalo) return;
+    intervalo=setInterval(()=>{
+        if(tiempo>0){ tiempo--; actualizar(); }
+        else { pause(); alert("ROUND FINALIZADO"); }
+    },1000);
+}
+
+function pause(){ clearInterval(intervalo); intervalo=null; }
+
+function reset(){
+    pause();
+    if(confirm("¿Iniciar siguiente round y limpiar puntos?")){
+        round++; rojo=0; azul=0; gRojo=0; gAzul=0; tiempo=120;
+        actualizar();
+    }
+}
+
+function setNombres(){
+    document.getElementById("nRojo").innerText=document.getElementById("rname").value||"ROJO";
+    document.getElementById("nAzul").innerText=document.getElementById("aname").value||"AZUL";
+}
+
+// 6. INICIALIZACIÓN DE QR Y MODOS
+const urlActual = window.location.href.split('?')[0];
+const urlJuez = urlActual + "?mode=juez";
+
+new QRCode(document.getElementById("qrcode"), {
+    text: urlJuez,
+    width: 120,
+    height: 120,
+    colorDark : "#000000",
+    colorLight : "#ffffff",
+    correctLevel : QRCode.CorrectLevel.H
+});
+
+const params = new URLSearchParams(window.location.search);
+if(params.get('mode') === 'juez'){
+    document.getElementById('marcador-ui').style.display = 'none';
+    document.getElementById('juez-ui').style.display = 'flex';
+}
+</script>
+</body>
+</html>
