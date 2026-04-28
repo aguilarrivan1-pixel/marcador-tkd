@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TKD Scoreboard - Sistema de Áreas</title>
+    <title>TKD Scoreboard Pro - Multi Área</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
         body { margin:0; font-family:'Segoe UI', sans-serif; background:black; color:white; display:flex; height:100vh; overflow:hidden; }
-        .lado { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        .lado { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position: relative; }
         .azul { background:#0033cc; }
         .rojo { background:#a00000; }
         .score { font-size:160px; font-weight: bold; line-height: 1; }
@@ -26,7 +26,7 @@
         .penal { background:#ffaa00; color: black; padding: 10px; margin-bottom: 5px; }
         .restar { background: #222; color: #888; border: 1px solid #444; padding: 5px 10px; font-size: 11px; }
         input { width: 80%; margin: 3px; padding: 6px; border-radius: 4px; border: none; background: #222; color: white; text-align: center; }
-        .area-tag { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 5px; font-size: 12px; }
+        .area-info { position: absolute; top: 10px; left: 10px; font-size: 14px; color: yellow; font-weight: bold; }
 
         /* VISTA JUEZ */
         #juez-ui { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:#111; z-index:9999; flex-direction: column; padding: 10px; box-sizing: border-box; }
@@ -35,13 +35,12 @@
         .bj-azul { background: #0033cc; }
         .bj-rojo { background: #a00000; }
         .bj-puntos { font-size: 45px; display: block; font-weight: bold; }
-        .status-juez { text-align: center; padding: 10px; font-size: 18px; color: yellow; background: #222; margin-bottom: 10px; border-radius: 10px; }
     </style>
 </head>
 <body>
 
 <div id="marcador-ui" style="display: flex; width: 100%;">
-    <div class="area-tag" id="areaDisplay">ÁREA: 1</div>
+    <div class="area-info" id="areaNom">CARGANDO ÁREA...</div>
     <div class="lado azul">
         <div class="rounds-ganados" id="roundsAzul"><div class="dot"></div><div class="dot"></div></div>
         <div class="nombre" id="nAzul">AZUL</div>
@@ -50,15 +49,14 @@
         <button class="penal" onclick="penal('azul')">GAM-JEOM</button>
         <button class="restar" onclick="restar('azul')">CORREGIR -1</button>
     </div>
-
     <div class="centro">
         <div style="font-size: 16px;">ROUND <span id="round">1</span></div>
         <div class="timer" id="tiempo">120</div>
         <button class="control" style="background: #28a745;" onclick="start()">START</button>
         <button class="control" onclick="pause()">PAUSE</button>
-        <div style="background: #222; padding: 5px; width: 90%; border-radius: 5px; margin: 5px 0;">
-            <input id="t-manual" type="number" placeholder="Segs" style="width: 50px;">
-            <button class="control" style="width: auto; padding: 5px;" onclick="ajustarTiempo()">SET</button>
+        <div style="background: #222; padding: 5px; width: 90%; border-radius: 5px; margin: 5px 0; display: flex;">
+            <input id="t-manual" type="number" placeholder="Segs" style="width: 60px;">
+            <button class="control" style="width: auto; margin-left: 5px;" onclick="ajustarTiempo()">SET</button>
         </div>
         <button class="control" onclick="finalizarRound()">FIN ROUND</button>
         <button class="control" style="background: #dc3545;" onclick="resetMatch()">NUEVO COMBATE</button>
@@ -67,7 +65,6 @@
         <input id="rname" placeholder="Nombre Rojo">
         <button class="control" onclick="setNombres()">ACTUALIZAR</button>
     </div>
-
     <div class="lado rojo">
         <div class="rounds-ganados" id="roundsRojo"><div class="dot"></div><div class="dot"></div></div>
         <div class="nombre" id="nRojo">ROJO</div>
@@ -79,8 +76,8 @@
 </div>
 
 <div id="juez-ui">
-    <div id="juez-header" class="status-juez">CONECTANDO...</div>
-    <div id="juez-controles" style="display:none; flex: 1; flex-direction: column;">
+    <div id="juez-msg" style="text-align:center; padding:10px; color:yellow; font-weight:bold;">CONECTANDO...</div>
+    <div id="controles-juez" style="display:none; flex:1; flex-direction:column;">
         <div class="juez-grid">
             <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 1)">AZUL<span class="bj-puntos">+1</span></button>
             <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 2)">AZUL<span class="bj-puntos">+2</span></button>
@@ -90,91 +87,106 @@
             <button class="btn-juez bj-rojo" onclick="enviarPunto('rojo', 3)">ROJO<span class="bj-puntos">+3</span></button>
         </div>
     </div>
-    <div id="juez-full" style="display:none; text-align: center; padding: 50px;">
-        <h2 style="color: red;">ÁREA LLENA</h2>
-        <p>Ya hay 2 jueces conectados en esta área.</p>
-        <button class="control" onclick="window.location.reload()">REINTENTAR</button>
+    <div id="error-juez" style="display:none; text-align:center; padding:20px; color:red;">
+        <h2>ÁREA LLENA</h2><p>Ya hay 2 jueces en esta área.</p>
     </div>
 </div>
 
 <script>
-// CONFIGURACIÓN DINÁMICA DE ÁREA
+// CONFIGURACIÓN INICIAL
 const params = new URLSearchParams(window.location.search);
 const areaID = params.get('area') || '1';
-const modoJuez = params.get('mode') === 'juez';
-document.getElementById("areaDisplay").innerText = "ÁREA: " + areaID;
+const isJuez = params.get('mode') === 'juez';
+document.getElementById("areaNom").innerText = "ÁREA: " + areaID;
 
-const API_KEY = 'lghMsA.rFblDA:Uo_Ya0lwt-osgx2EhIM1egWJb1pTR4seB8MQKN_Rqp8'; // <--- PON TU LLAVE AQUÍ
-const ably = new Ably.Realtime(API_KEY);
+// SUSTITUYE TU KEY AQUÍ
+const API_KEY = 'lghMsA.rFblDA:Uo_Ya0lwt-osgx2EhIM1egWJb1pTR4seB8MQKN_Rqp8I'; 
+const ably = new Ably.Realtime({ key: API_KEY, clientId: 'client-' + Math.random().toString(36).substr(2, 9) });
 const canal = ably.channels.get('tkd-area-' + areaID);
 
-// ESTADO GLOBAL
 let rojo=0, azul=0, gRojo=0, gAzul=0, tiempo=120, intervalo=null, round=1, wRojo=0, wAzul=0;
-let registrosPuntos = [];
+let registros = [];
 
-// LÓGICA DE PRESENCIA (LIMITAR JUECES)
-if(modoJuez) {
-    document.getElementById('marcador-ui').style.display = 'none';
-    document.getElementById('juez-ui').style.display = 'flex';
-    
-    canal.presence.get((err, members) => {
-        const juecesActivos = members.filter(m => m.data && m.data.tipo === 'juez').length;
-        if(juecesActivos >= 2) {
-            document.getElementById('juez-header').style.display = 'none';
-            document.getElementById('juez-full').style.display = 'block';
-        } else {
-            canal.presence.enter({ tipo: 'juez' });
-            document.getElementById('juez-header').innerText = "ÁREA " + areaID + " - JUEZ CONECTADO";
-            document.getElementById('juez-controles').style.display = 'flex';
-        }
-    });
-}
+// LÓGICA DE CONEXIÓN
+ably.connection.on('connected', () => {
+    if (isJuez) {
+        document.getElementById('marcador-ui').style.display = 'none';
+        document.getElementById('juez-ui').style.display = 'flex';
+        
+        canal.presence.get((err, members) => {
+            const count = members.filter(m => m.data && m.data.rol === 'juez').length;
+            if (count >= 2) {
+                document.getElementById('juez-msg').style.display = 'none';
+                document.getElementById('error-juez').style.display = 'block';
+            } else {
+                canal.presence.enter({ rol: 'juez' });
+                document.getElementById('juez-msg').innerText = "ÁREA " + areaID + " - CONECTADO";
+                document.getElementById('controles-juez').style.display = 'flex';
+            }
+        });
+    }
+});
 
-// RECIBIR PUNTOS
+// LÓGICA DE PUNTOS (COINCIDENCIA 2 JUECES)
 canal.subscribe('punto', (msg) => {
-    const clic = { equipo: msg.data.equipo, puntos: msg.data.puntos, idJuez: msg.connectionId, timestamp: Date.now() };
-    registrosPuntos.push(clic);
-    registrosPuntos = registrosPuntos.filter(c => (Date.now() - c.timestamp) < 2000);
-    const matches = registrosPuntos.filter(c => c.equipo === clic.equipo && c.puntos === clic.puntos);
-    if (new Set(matches.map(c => c.idJuez)).size >= 2) {
-        if(clic.equipo === "rojo") rojo += clic.puntos; else azul += clic.puntos;
-        registrosPuntos = registrosPuntos.filter(c => c.equipo !== clic.equipo);
+    const data = msg.data;
+    const click = { equipo: data.e, pts: data.p, juez: msg.connectionId, t: Date.now() };
+    registros.push(click);
+    
+    // Filtro ventana 2 segundos
+    registros = registros.filter(r => (Date.now() - r.t) < 2000);
+    
+    const matches = registros.filter(r => r.equipo === click.equipo && r.pts === click.pts);
+    const juecesUnicos = new Set(matches.map(r => r.juez));
+
+    if (juecesUnicos.size >= 2) {
+        if (click.equipo === 'rojo') rojo += click.pts; else azul += click.pts;
+        registros = registros.filter(r => r.equipo !== click.equipo);
         actualizar();
     }
 });
 
-// FUNCIONES DE CONTROL
 function actualizar(){
     document.getElementById("rojo").innerText=rojo; document.getElementById("azul").innerText=azul;
     document.getElementById("gRojo").innerText=gRojo; document.getElementById("gAzul").innerText=gAzul;
     document.getElementById("tiempo").innerText=tiempo; document.getElementById("round").innerText=round;
 }
-function restar(e){ if(e==="rojo"){ if(rojo>0)rojo--; } else { if(azul>0)azul--; } actualizar(); }
-function penal(e){ if(e==="rojo"){ gRojo++; azul++; } else { gAzul++; rojo++; } actualizar(); }
-function ajustarTiempo(){ let nt = document.getElementById("t-manual").value; if(nt !== "") { tiempo = parseInt(nt); actualizar(); } }
-function start(){ if(!intervalo) intervalo=setInterval(()=>{ if(tiempo>0){ tiempo--; actualizar(); } else { finalizarRound(); } }, 1000); }
+
+function sumar(e, p){ if(e==='rojo') rojo+=p; else azul+=p; actualizar(); }
+function restar(e){ if(e==='rojo'){ if(rojo>0)rojo--; } else { if(azul>0)azul--; } actualizar(); }
+function penal(e){ if(e==='rojo'){ gRojo++; azul++; } else { gAzul++; rojo++; } actualizar(); }
+function ajustarTiempo(){ const t = document.getElementById("t-manual").value; if(t!=="") { tiempo=parseInt(t); actualizar(); } }
+function start(){ if(!intervalo) intervalo=setInterval(()=>{ if(tiempo>0){ tiempo--; actualizar(); } else { finalizarRound(); } },1000); }
 function pause(){ clearInterval(intervalo); intervalo=null; }
+
 function finalizarRound(){
     pause();
-    if(rojo > azul) wRojo++; else if(azul > rojo) wAzul++; else { alert("Empate. Decisión del Referee."); return; }
+    if(rojo > azul) wRojo++; else if(azul > rojo) wAzul++; else { alert("Empate de puntos."); return; }
     actualizarRounds();
-    if(wRojo === 2 || wAzul === 2) { alert("GANADOR: " + (wRojo===2?"ROJO":"AZUL")); resetMatch(); } 
-    else { alert("Round " + round + " finalizado."); round++; rojo=0; azul=0; gRojo=0; gAzul=0; tiempo=120; actualizar(); }
+    if(wRojo === 2 || wAzul === 2) { alert("GANADOR: " + (wRojo===2?"ROJO":"AZUL")); resetMatch(); }
+    else { alert("Fin del Round " + round); round++; rojo=0; azul=0; gRojo=0; gAzul=0; tiempo=120; actualizar(); }
 }
+
 function resetMatch(){ pause(); round=1; rojo=0; azul=0; gRojo=0; gAzul=0; wRojo=0; wAzul=0; tiempo=120; actualizar(); actualizarRounds(); }
+
 function actualizarRounds(){
     const da = document.getElementById("roundsAzul").children; const dr = document.getElementById("roundsRojo").children;
-    for(let i=0; i<2; i++){ da[i].className = i < wAzul ? "dot active" : "dot"; dr[i].className = i < wRojo ? "dot active" : "dot"; }
+    for(let i=0; i<2; i++){ da[i].className = i<wAzul?"dot active":"dot"; dr[i].className = i<wRojo?"dot active":"dot"; }
 }
+
 function setNombres(){
     document.getElementById("nRojo").innerText=document.getElementById("rname").value||"ROJO";
     document.getElementById("nAzul").innerText=document.getElementById("aname").value||"AZUL";
 }
-function enviarPunto(equipo, puntos) { if (navigator.vibrate) navigator.vibrate(60); canal.publish('punto', { equipo, puntos }); }
 
-// QR DINÁMICO
-const urlJuez = window.location.href.split('?')[0] + "?mode=juez&area=" + areaID;
-new QRCode(document.getElementById("qrcode"), { text: urlJuez, width: 85, height: 85 });
+function enviarPunto(equipo, puntos) {
+    if (navigator.vibrate) navigator.vibrate(60);
+    canal.publish('punto', { e: equipo, p: puntos });
+}
+
+// QR
+const urlBase = window.location.href.split('?')[0];
+new QRCode(document.getElementById("qrcode"), { text: urlBase + "?mode=juez&area=" + areaID, width: 90, height: 90 });
 actualizar();
 </script>
 </body>
