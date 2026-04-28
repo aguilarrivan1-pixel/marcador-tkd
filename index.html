@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TKD Scoreboard - Best of 3</title>
+    <title>TKD Scoreboard - Sistema de Áreas</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
@@ -14,15 +14,11 @@
         .score { font-size:160px; font-weight: bold; line-height: 1; }
         .nombre { font-size:35px; margin-bottom:5px; font-weight: bold; text-transform: uppercase; }
         .gam { font-size:20px; background: rgba(0,0,0,0.4); padding: 5px 15px; border-radius: 20px; }
-        
-        /* Marcador de Rounds Ganados */
         .rounds-ganados { display: flex; gap: 10px; margin-bottom: 20px; }
-        .dot { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; background: transparent; }
+        .dot { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; }
         .dot.active { background: yellow; border-color: yellow; }
-
         .centro { width:320px; background:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; border-left: 2px solid #333; border-right: 2px solid #333; }
         .timer { background:yellow; color:black; font-size:75px; padding:10px 20px; margin:10px; font-family: monospace; font-weight: bold; border-radius: 10px; }
-        
         #qrcode { background: white; padding: 8px; border-radius: 5px; }
         button { cursor:pointer; border:none; border-radius:5px; font-weight: bold; transition: 0.1s; }
         button:active { transform: scale(0.9); }
@@ -30,6 +26,7 @@
         .penal { background:#ffaa00; color: black; padding: 10px; margin-bottom: 5px; }
         .restar { background: #222; color: #888; border: 1px solid #444; padding: 5px 10px; font-size: 11px; }
         input { width: 80%; margin: 3px; padding: 6px; border-radius: 4px; border: none; background: #222; color: white; text-align: center; }
+        .area-tag { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 5px; font-size: 12px; }
 
         /* VISTA JUEZ */
         #juez-ui { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:#111; z-index:9999; flex-direction: column; padding: 10px; box-sizing: border-box; }
@@ -38,15 +35,15 @@
         .bj-azul { background: #0033cc; }
         .bj-rojo { background: #a00000; }
         .bj-puntos { font-size: 45px; display: block; font-weight: bold; }
+        .status-juez { text-align: center; padding: 10px; font-size: 18px; color: yellow; background: #222; margin-bottom: 10px; border-radius: 10px; }
     </style>
 </head>
 <body>
 
 <div id="marcador-ui" style="display: flex; width: 100%;">
+    <div class="area-tag" id="areaDisplay">ÁREA: 1</div>
     <div class="lado azul">
-        <div class="rounds-ganados" id="roundsAzul">
-            <div class="dot"></div><div class="dot"></div>
-        </div>
+        <div class="rounds-ganados" id="roundsAzul"><div class="dot"></div><div class="dot"></div></div>
         <div class="nombre" id="nAzul">AZUL</div>
         <div class="score" id="azul">0</div>
         <div class="gam">Gam-jeom: <span id="gAzul">0</span></div>
@@ -57,18 +54,14 @@
     <div class="centro">
         <div style="font-size: 16px;">ROUND <span id="round">1</span></div>
         <div class="timer" id="tiempo">120</div>
-        
         <button class="control" style="background: #28a745;" onclick="start()">START</button>
         <button class="control" onclick="pause()">PAUSE</button>
-        
         <div style="background: #222; padding: 5px; width: 90%; border-radius: 5px; margin: 5px 0;">
-            <input id="t-manual" type="number" placeholder="Segundos" style="width: 60px;">
-            <button class="control" style="width: auto; padding: 5px;" onclick="ajustarTiempo()">SET TIME</button>
+            <input id="t-manual" type="number" placeholder="Segs" style="width: 50px;">
+            <button class="control" style="width: auto; padding: 5px;" onclick="ajustarTiempo()">SET</button>
         </div>
-
-        <button class="control" onclick="finalizarRound()">FINALIZAR ROUND</button>
+        <button class="control" onclick="finalizarRound()">FIN ROUND</button>
         <button class="control" style="background: #dc3545;" onclick="resetMatch()">NUEVO COMBATE</button>
-        
         <div id="qrcode"></div>
         <input id="aname" placeholder="Nombre Azul" style="margin-top:10px;">
         <input id="rname" placeholder="Nombre Rojo">
@@ -76,9 +69,7 @@
     </div>
 
     <div class="lado rojo">
-        <div class="rounds-ganados" id="roundsRojo">
-            <div class="dot"></div><div class="dot"></div>
-        </div>
+        <div class="rounds-ganados" id="roundsRojo"><div class="dot"></div><div class="dot"></div></div>
         <div class="nombre" id="nRojo">ROJO</div>
         <div class="score" id="rojo">0</div>
         <div class="gam">Gam-jeom: <span id="gRojo">0</span></div>
@@ -88,118 +79,103 @@
 </div>
 
 <div id="juez-ui">
-    <div class="juez-grid">
-        <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 1)">AZUL<span class="bj-puntos">+1</span></button>
-        <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 2)">AZUL<span class="bj-puntos">+2</span></button>
-        <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 3)">AZUL<span class="bj-puntos">+3</span></button>
-        
-        <button class="btn-juez bj-rojo" onclick="enviarPunto('rojo', 1)">ROJO<span class="bj-puntos">+1</span></button>
-        <button class="btn-juez bj-rojo" onclick="enviarPunto('rojo', 2)">ROJO<span class="bj-puntos">+2</span></button>
-        <button class="btn-juez bj-rojo" onclick="enviarPunto('rojo', 3)">ROJO<span class="bj-puntos">+3</span></button>
+    <div id="juez-header" class="status-juez">CONECTANDO...</div>
+    <div id="juez-controles" style="display:none; flex: 1; flex-direction: column;">
+        <div class="juez-grid">
+            <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 1)">AZUL<span class="bj-puntos">+1</span></button>
+            <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 2)">AZUL<span class="bj-puntos">+2</span></button>
+            <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 3)">AZUL<span class="bj-puntos">+3</span></button>
+            <button class="btn-juez bj-rojo" onclick="enviarPunto('rojo', 1)">ROJO<span class="bj-puntos">+1</span></button>
+            <button class="btn-juez bj-rojo" onclick="enviarPunto('rojo', 2)">ROJO<span class="bj-puntos">+2</span></button>
+            <button class="btn-juez bj-rojo" onclick="enviarPunto('rojo', 3)">ROJO<span class="bj-puntos">+3</span></button>
+        </div>
+    </div>
+    <div id="juez-full" style="display:none; text-align: center; padding: 50px;">
+        <h2 style="color: red;">ÁREA LLENA</h2>
+        <p>Ya hay 2 jueces conectados en esta área.</p>
+        <button class="control" onclick="window.location.reload()">REINTENTAR</button>
     </div>
 </div>
 
 <script>
-// CONFIG ABLY
-const ably = new Ably.Realtime('lghMsA.rFblDA:Uo_Ya0lwt-osgx2EhIM1egWJb1pTR4seB8MQKN_Rqp8');
-const canal = ably.channels.get('tkd-match-oficial');
+// CONFIGURACIÓN DINÁMICA DE ÁREA
+const params = new URLSearchParams(window.location.search);
+const areaID = params.get('area') || '1';
+const modoJuez = params.get('mode') === 'juez';
+document.getElementById("areaDisplay").innerText = "ÁREA: " + areaID;
 
-// VARIABLES DE ESTADO
-let rojo=0, azul=0, gRojo=0, gAzul=0, tiempo=120, intervalo=null, round=1;
-let wRojo=0, wAzul=0; // Rounds ganados
+const API_KEY = 'lghMsA.rFblDA:Uo_Ya0lwt-osgx2EhIM1egWJb1pTR4seB8MQKN_Rqp8'; // <--- PON TU LLAVE AQUÍ
+const ably = new Ably.Realtime(API_KEY);
+const canal = ably.channels.get('tkd-area-' + areaID);
+
+// ESTADO GLOBAL
+let rojo=0, azul=0, gRojo=0, gAzul=0, tiempo=120, intervalo=null, round=1, wRojo=0, wAzul=0;
 let registrosPuntos = [];
 
-// RECEPCIÓN DE PUNTOS
+// LÓGICA DE PRESENCIA (LIMITAR JUECES)
+if(modoJuez) {
+    document.getElementById('marcador-ui').style.display = 'none';
+    document.getElementById('juez-ui').style.display = 'flex';
+    
+    canal.presence.get((err, members) => {
+        const juecesActivos = members.filter(m => m.data && m.data.tipo === 'juez').length;
+        if(juecesActivos >= 2) {
+            document.getElementById('juez-header').style.display = 'none';
+            document.getElementById('juez-full').style.display = 'block';
+        } else {
+            canal.presence.enter({ tipo: 'juez' });
+            document.getElementById('juez-header').innerText = "ÁREA " + areaID + " - JUEZ CONECTADO";
+            document.getElementById('juez-controles').style.display = 'flex';
+        }
+    });
+}
+
+// RECIBIR PUNTOS
 canal.subscribe('punto', (msg) => {
     const clic = { equipo: msg.data.equipo, puntos: msg.data.puntos, idJuez: msg.connectionId, timestamp: Date.now() };
     registrosPuntos.push(clic);
-    
-    const ahora = Date.now();
-    registrosPuntos = registrosPuntos.filter(c => (ahora - c.timestamp) < 2000);
+    registrosPuntos = registrosPuntos.filter(c => (Date.now() - c.timestamp) < 2000);
     const matches = registrosPuntos.filter(c => c.equipo === clic.equipo && c.puntos === clic.puntos);
-    
     if (new Set(matches.map(c => c.idJuez)).size >= 2) {
-        sumar(clic.equipo, clic.puntos);
+        if(clic.equipo === "rojo") rojo += clic.puntos; else azul += clic.puntos;
         registrosPuntos = registrosPuntos.filter(c => c.equipo !== clic.equipo);
+        actualizar();
     }
 });
 
-function sumar(e, p){ if(e==="rojo") rojo+=p; else azul+=p; actualizar(); }
+// FUNCIONES DE CONTROL
+function actualizar(){
+    document.getElementById("rojo").innerText=rojo; document.getElementById("azul").innerText=azul;
+    document.getElementById("gRojo").innerText=gRojo; document.getElementById("gAzul").innerText=gAzul;
+    document.getElementById("tiempo").innerText=tiempo; document.getElementById("round").innerText=round;
+}
 function restar(e){ if(e==="rojo"){ if(rojo>0)rojo--; } else { if(azul>0)azul--; } actualizar(); }
 function penal(e){ if(e==="rojo"){ gRojo++; azul++; } else { gAzul++; rojo++; } actualizar(); }
-
-function ajustarTiempo(){
-    let nt = document.getElementById("t-manual").value;
-    if(nt !== "") { tiempo = parseInt(nt); actualizar(); }
-}
-
-function finalizarRound(){
-    pause();
-    if(rojo > azul) wRojo++;
-    else if(azul > rojo) wAzul++;
-    else { alert("Empate en puntos. Decide el referee."); return; }
-
-    actualizarRounds();
-    
-    if(wRojo === 2 || wAzul === 2){
-        alert("GANADOR DEL COMBATE: " + (wRojo === 2 ? "ROJO" : "AZUL"));
-        resetMatch();
-    } else {
-        alert("Round " + round + " finalizado. Preparar siguiente.");
-        limpiarRound();
-    }
-}
-
-function limpiarRound(){
-    round++; rojo=0; azul=0; gRojo=0; gAzul=0; tiempo=120;
-    actualizar();
-}
-
-function resetMatch(){
-    pause(); round=1; rojo=0; azul=0; gRojo=0; gAzul=0; wRojo=0; wAzul=0; tiempo=120;
-    actualizar();
-    actualizarRounds();
-}
-
-function actualizarRounds(){
-    const da = document.getElementById("roundsAzul").children;
-    const dr = document.getElementById("roundsRojo").children;
-    for(let i=0; i<2; i++){
-        da[i].className = i < wAzul ? "dot active" : "dot";
-        dr[i].className = i < wRojo ? "dot active" : "dot";
-    }
-}
-
-function actualizar(){
-    document.getElementById("rojo").innerText=rojo;
-    document.getElementById("azul").innerText=azul;
-    document.getElementById("gRojo").innerText=gRojo;
-    document.getElementById("gAzul").innerText=gAzul;
-    document.getElementById("tiempo").innerText=tiempo;
-    document.getElementById("round").innerText=round;
-}
-
+function ajustarTiempo(){ let nt = document.getElementById("t-manual").value; if(nt !== "") { tiempo = parseInt(nt); actualizar(); } }
 function start(){ if(!intervalo) intervalo=setInterval(()=>{ if(tiempo>0){ tiempo--; actualizar(); } else { finalizarRound(); } }, 1000); }
 function pause(){ clearInterval(intervalo); intervalo=null; }
-
+function finalizarRound(){
+    pause();
+    if(rojo > azul) wRojo++; else if(azul > rojo) wAzul++; else { alert("Empate. Decisión del Referee."); return; }
+    actualizarRounds();
+    if(wRojo === 2 || wAzul === 2) { alert("GANADOR: " + (wRojo===2?"ROJO":"AZUL")); resetMatch(); } 
+    else { alert("Round " + round + " finalizado."); round++; rojo=0; azul=0; gRojo=0; gAzul=0; tiempo=120; actualizar(); }
+}
+function resetMatch(){ pause(); round=1; rojo=0; azul=0; gRojo=0; gAzul=0; wRojo=0; wAzul=0; tiempo=120; actualizar(); actualizarRounds(); }
+function actualizarRounds(){
+    const da = document.getElementById("roundsAzul").children; const dr = document.getElementById("roundsRojo").children;
+    for(let i=0; i<2; i++){ da[i].className = i < wAzul ? "dot active" : "dot"; dr[i].className = i < wRojo ? "dot active" : "dot"; }
+}
 function setNombres(){
     document.getElementById("nRojo").innerText=document.getElementById("rname").value||"ROJO";
     document.getElementById("nAzul").innerText=document.getElementById("aname").value||"AZUL";
 }
+function enviarPunto(equipo, puntos) { if (navigator.vibrate) navigator.vibrate(60); canal.publish('punto', { equipo, puntos }); }
 
-function enviarPunto(equipo, puntos) {
-    if (navigator.vibrate) navigator.vibrate(60);
-    canal.publish('punto', { equipo, puntos });
-}
-
-// INICIALIZACIÓN QR
-const urlJuez = window.location.href.split('?')[0] + "?mode=juez";
-new QRCode(document.getElementById("qrcode"), { text: urlJuez, width: 90, height: 90 });
-
-if(new URLSearchParams(window.location.search).get('mode') === 'juez'){
-    document.getElementById('marcador-ui').style.display = 'none';
-    document.getElementById('juez-ui').style.display = 'flex';
-}
+// QR DINÁMICO
+const urlJuez = window.location.href.split('?')[0] + "?mode=juez&area=" + areaID;
+new QRCode(document.getElementById("qrcode"), { text: urlJuez, width: 85, height: 85 });
+actualizar();
 </script>
 </body>
 </html>
