@@ -25,7 +25,6 @@
         .azul { background:#0033cc; }
         .rojo { background:#a00000; }
         
-        /* MARCAS DE AGUA */
         .watermark { position: absolute; bottom: 20px; font-size: 14px; opacity: 0.3; font-weight: bold; pointer-events: none; font-family: sans-serif; letter-spacing: 2px; }
         .wm-azul { left: 25px; }
         .wm-rojo { right: 25px; }
@@ -40,7 +39,6 @@
 
         .centro { width: 320px; background:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; border-left: 2px solid #333; border-right: 2px solid #333; }
         
-        /* TÍTULO LIGA */
         .titulo-liga { text-align: center; line-height: 1.1; margin-bottom: 15px; }
         .t-liga { font-size: 14px; color: #ddd; letter-spacing: 2px; }
         .t-tkd { font-size: 22px; color: white; display: block; }
@@ -53,11 +51,11 @@
         .restar { background: none; color: #666; font-size: 11px; margin-top: 5px; border: 1px solid #333; padding: 5px 12px; border-radius: 10px; z-index: 2; }
         input { width: 85%; margin: 2px; padding: 8px; border-radius: 4px; border: none; background: #222; color: white; text-align: center; }
 
-        /* JUEZ */
+        /* JUEZ - BOTONES ALARGADOS */
         #juez-ui { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; flex-direction: column; }
-        .juez-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; padding: 8px; }
-        .btn-tec { flex: 1; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .btn-tec span { font-size: 26px; font-weight: bold; }
+        .juez-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: 1; padding: 10px; }
+        .btn-tec { flex: 1; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+        .btn-tec span { font-size: 32px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -103,9 +101,7 @@
 
         <button class="control" onclick="finalizarRound()">FIN ROUND</button>
         <button class="control" style="background:#d9534f;" onclick="resetMatch()">NUEVO COMBATE</button>
-        
         <div id="qrcode" style="margin: 5px 0;"></div>
-        
         <input id="aname" placeholder="Nombre Azul" style="font-size: 10px;">
         <input id="rname" placeholder="Nombre Rojo" style="font-size: 10px;">
         <button class="control" style="background:#222; border:1px solid #444;" onclick="setNombres()">ACTUALIZAR</button>
@@ -124,13 +120,13 @@
 
 <div id="juez-ui">
     <div class="juez-grid">
-        <div class="lado azul" style="gap:8px; padding:10px;">
+        <div class="lado azul" style="gap:8px; padding:5px;">
             <button class="btn-tec" onclick="enviarPunto('azul', 1)">PUÑO <span>+1</span></button>
             <button class="btn-tec" onclick="enviarPunto('azul', 2)">CUERPO <span>+2</span></button>
             <button class="btn-tec" onclick="enviarPunto('azul', 4)">GIRO <span>+4</span></button>
             <button class="btn-tec" onclick="enviarPunto('azul', 6)">G. CABEZA <span>+6</span></button>
         </div>
-        <div class="lado rojo" style="gap:8px; padding:10px;">
+        <div class="lado rojo" style="gap:8px; padding:5px;">
             <button class="btn-tec" onclick="enviarPunto('rojo', 1)">PUÑO <span>+1</span></button>
             <button class="btn-tec" onclick="enviarPunto('rojo', 2)">CUERPO <span>+2</span></button>
             <button class="btn-tec" onclick="enviarPunto('rojo', 4)">GIRO <span>+4</span></button>
@@ -143,19 +139,24 @@
 const CLAVE_MAESTRA = "BOGOTA2026"; 
 const API_KEY = 'lghMsA.rFblDA:Uo_Ya0lwt-osgx2EhIM1egWJb1pTR4seB8MQKN_Rqp8'; 
 
+const params = new URLSearchParams(window.location.search);
+const areaID = params.get('area') || '1';
+const esJuez = window.innerWidth < 600 || params.get('mode') === 'juez';
+
+// INICIO AUTOMÁTICO SI ES JUEZ
+if(esJuez) {
+    document.getElementById("bloqueo-seguridad").style.display = "none";
+    document.getElementById("juez-ui").style.display = "flex";
+}
+
 function verificarAcceso() {
     if(document.getElementById("pass-field").value === CLAVE_MAESTRA) {
         document.getElementById("bloqueo-seguridad").style.display = "none";
         document.getElementById("marcador-ui").style.visibility = "visible";
-        if(esJuez) document.getElementById('juez-ui').style.display = 'flex';
     } else { alert("Clave Incorrecta"); }
 }
 
-const params = new URLSearchParams(window.location.search);
-const areaID = params.get('area') || '1';
 document.getElementById("displayArea").innerText = areaID;
-const esJuez = window.innerWidth < 600 || params.get('mode') === 'juez';
-
 const ably = new Ably.Realtime({ key: API_KEY });
 const canal = ably.channels.get('tkd-' + areaID);
 
