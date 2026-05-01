@@ -3,16 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TKD Scoreboard Pro - Oficial</title>
+    <title>TKD Scoreboard - Liga de Bogotá</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
         body { margin:0; font-family: sans-serif; background:black; color:white; display:flex; height:100vh; overflow:hidden; }
-        .lado { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        
+        /* --- ESTILOS MARCADOR PRINCIPAL --- */
+        .lado { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position: relative; }
         .azul { background:#0033cc; }
         .rojo { background:#a00000; }
-        .score { font-size: clamp(80px, 15vw, 160px); font-weight: bold; line-height: 1; }
-        .nombre { font-size: 25px; margin-bottom: 5px; font-weight: bold; }
+        
+        .watermark { position: absolute; bottom: 10px; font-size: 11px; opacity: 0.3; font-weight: bold; pointer-events: none; }
+        .wm-azul { left: 15px; }
+        .wm-rojo { right: 15px; }
+
+        .score { font-size: clamp(80px, 15vw, 160px); font-weight: bold; line-height: 1; z-index: 2; }
+        .nombre { font-size: 25px; margin-bottom: 5px; font-weight: bold; text-transform: uppercase; }
         .gam { font-size: 18px; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; margin-bottom: 10px; }
         
         .rounds-ganados { display: flex; gap: 8px; margin-bottom: 15px; }
@@ -20,92 +27,99 @@
         .dot.active { background: yellow; border-color: yellow; }
 
         .centro { width: 300px; background:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; border-left: 2px solid #333; border-right: 2px solid #333; }
+        .logo-main { width: 180px; margin-bottom: 10px; }
         .timer { background:yellow; color:black; font-size: 70px; padding: 5px 20px; margin: 10px; font-family: monospace; font-weight: bold; border-radius: 10px; }
         
-        #qrcode { background: white; padding: 8px; border-radius: 5px; margin-bottom: 5px; }
+        #qrcode { background: white; padding: 5px; border-radius: 5px; margin-bottom: 5px; }
         button { cursor:pointer; border:none; border-radius:5px; font-weight: bold; }
-        .control { background:#444; color:white; width: 90%; padding:10px; margin:3px; font-size: 13px; }
+        .control { background:#444; color:white; width: 90%; padding:10px; margin:2px; font-size: 12px; }
         .penal { background:#ffaa00; color: black; padding: 8px 15px; margin-bottom: 5px; }
-        .restar { background: #222; color: #777; border: 1px solid #333; padding: 4px 10px; font-size: 11px; }
         input { width: 80%; margin: 2px; padding: 6px; border-radius: 4px; border: none; background: #222; color: white; text-align: center; }
 
-        /* --- INTERFAZ JUEZ (LADO A LADO) --- */
+        /* --- ESTILOS INTERFAZ JUEZ --- */
         #juez-ui { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; flex-direction: column; }
+        .header-juez { background: #222; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; border-bottom: 2px solid yellow; }
+        .logo-juez { height: 40px; }
         .juez-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; flex: 1; padding: 5px; }
-        
-        .col-juez { display: flex; flex-direction: column; gap: 5px; }
-        .btn-juez { flex: 1; font-size: 22px; color: white; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .bj-azul { background: #0033cc; }
-        .bj-rojo { background: #a00000; }
-        .bj-pts { font-size: 40px; display: block; font-weight: bold; }
-        .header-juez { text-align: center; color: yellow; font-size: 14px; background: #222; padding: 10px; font-weight: bold; }
+        .col-juez { display: flex; flex-direction: column; gap: 5px; padding: 5px; border-radius: 10px; }
+        .btn-tec { flex: 1; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .btn-tec span { font-size: 24px; font-weight: bold; }
     </style>
 </head>
 <body>
 
+<!-- VISTA MARCADOR -->
 <div id="marcador-ui" style="display: flex; width: 100%;">
     <div class="lado azul">
+        <div class="watermark wm-azul">LIGA TKD BOGOTÁ</div>
         <div class="rounds-ganados" id="roundsAzul"><div class="dot"></div><div class="dot"></div></div>
         <div class="nombre" id="nAzul">AZUL</div>
         <div class="score" id="azul">0</div>
         <div class="gam">Gam-jeom: <span id="gAzul">0</span></div>
         <button class="penal" onclick="penal('azul')">GAM-JEOM</button>
-        <button class="restar" onclick="restar('azul')">CORREGIR -1</button>
+        <button onclick="restar('azul')" style="font-size:10px; background:none; color:gray;">-1 PUNTO</button>
     </div>
 
     <div class="centro">
-        <div id="areaText" style="color:yellow; font-weight:bold; margin-bottom:5px;">ÁREA 1</div>
-        <div style="font-size: 14px;">ROUND <span id="round">1</span></div>
+        <img src="https://i.imgur.com/8QzQ8rT.png" class="logo-main"> <!-- URL de tu logo -->
+        <div id="areaText" style="color:yellow; font-size: 14px; font-weight:bold;">ÁREA 1</div>
+        <div style="font-size: 12px;">ROUND <span id="round">1</span></div>
         <div class="timer" id="tiempo">120</div>
         <button class="control" style="background: #28a745;" onclick="start()">START</button>
         <button class="control" onclick="pause()">PAUSE</button>
-        <div style="display:flex; width:90%; gap:5px;">
-            <input id="t-manual" type="number" placeholder="Segs" style="flex:1;">
-            <button class="control" style="width:auto;" onclick="ajustarTiempo()">SET</button>
-        </div>
         <button class="control" onclick="finalizarRound()">FIN ROUND</button>
         <button class="control" style="background:#d9534f;" onclick="resetMatch()">NUEVO COMBATE</button>
         <div id="qrcode"></div>
-        <input id="aname" placeholder="Nombre Azul">
-        <input id="rname" placeholder="Nombre Rojo">
+        <input id="aname" placeholder="Competidor Azul">
+        <input id="rname" placeholder="Competidor Rojo">
         <button class="control" onclick="setNombres()">ACTUALIZAR</button>
     </div>
 
     <div class="lado rojo">
+        <div class="watermark wm-rojo">LIGA TKD BOGOTÁ</div>
         <div class="rounds-ganados" id="roundsRojo"><div class="dot"></div><div class="dot"></div></div>
         <div class="nombre" id="nRojo">ROJO</div>
         <div class="score" id="rojo">0</div>
         <div class="gam">Gam-jeom: <span id="gRojo">0</span></div>
         <button class="penal" onclick="penal('rojo')">GAM-JEOM</button>
-        <button class="restar" onclick="restar('rojo')">CORREGIR -1</button>
+        <button onclick="restar('rojo')" style="font-size:10px; background:none; color:gray;">-1 PUNTO</button>
     </div>
 </div>
 
+<!-- VISTA JUEZ -->
 <div id="juez-ui">
-    <div class="header-juez" id="juez-info">CONECTANDO...</div>
-    <div id="grid-juez" style="display:none; flex:1;">
-        <div class="juez-grid">
-            <div class="col-juez">
-                <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 1)">AZUL <span class="bj-pts">+1</span></button>
-                <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 2)">AZUL <span class="bj-pts">+2</span></button>
-                <button class="btn-juez bj-azul" onclick="enviarPunto('azul', 3)">AZUL <span class="bj-pts">+3</span></button>
-            </div>
-            <div class="col-juez">
-                <button class="btn-juez bj-rojo" onclick="enviarPunto('rojo', 1)">ROJO <span class="bj-pts">+1</span></button>
-                <button class="btn-juez bj-rojo" onclick="enviarPunto('rojo', 2)">ROJO <span class="bj-pts">+2</span></button>
-                <button class="btn-juez bj-rojo" onclick="enviarPunto('rojo', 3)">ROJO <span class="bj-pts">+3</span></button>
-            </div>
+    <div class="header-juez">
+        <img src="https://i.imgur.com/8QzQ8rT.png" class="logo-juez">
+        <div style="text-align: left;">
+            <div style="color:yellow; font-weight:bold; font-size:14px;">LIGA DE BOGOTÁ</div>
+            <div id="juez-info" style="font-size:11px;">MODO JUEZ PUNTUACIÓN</div>
+        </div>
+    </div>
+    <div class="juez-grid">
+        <div class="col-juez azul">
+            <button class="btn-tec" onclick="enviarPunto('azul', 1)">PUÑO <span>+1</span></button>
+            <button class="btn-tec" onclick="enviarPunto('azul', 2)">CUERPO <span>+2</span></button>
+            <button class="btn-tec" onclick="enviarPunto('azul', 3)">CABEZA <span>+3</span></button>
+            <button class="btn-tec" onclick="enviarPunto('azul', 4)">GIRO C. <span>+4</span></button>
+            <button class="btn-tec" onclick="enviarPunto('azul', 5)">GIRO CAB. <span>+5</span></button>
+        </div>
+        <div class="col-juez rojo">
+            <button class="btn-tec" onclick="enviarPunto('rojo', 1)">PUÑO <span>+1</span></button>
+            <button class="btn-tec" onclick="enviarPunto('rojo', 2)">CUERPO <span>+2</span></button>
+            <button class="btn-tec" onclick="enviarPunto('rojo', 3)">CABEZA <span>+3</span></button>
+            <button class="btn-tec" onclick="enviarPunto('rojo', 4)">GIRO C. <span>+4</span></button>
+            <button class="btn-tec" onclick="enviarPunto('rojo', 5)">GIRO CAB. <span>+5</span></button>
         </div>
     </div>
 </div>
 
 <script>
-const API_KEY = 'lghMsA.rFblDA:Uo_Ya0lwt-osgx2EhIM1egWJb1pTR4seB8MQKN_Rqp8'; // <--- COLOCA TU KEY DE ABLY AQUÍ
+const API_KEY = 'lghMsA.rFblDA:Uo_Ya0lwt-osgx2EhIM1egWJb1pTR4seB8MQKN_Rqp8'; // <--- COLOCA TU KEY DE ABLY
 const params = new URLSearchParams(window.location.search);
 const areaID = params.get('area') || '1';
 const esJuez = window.innerWidth < 600 || params.get('mode') === 'juez';
 
-const ably = new Ably.Realtime({ key: API_KEY, clientId: 'u-' + Math.random().toString(36).substr(2, 5) });
+const ably = new Ably.Realtime({ key: API_KEY, clientId: 'j-' + Math.random().toString(36).substr(2, 5) });
 const canal = ably.channels.get('tkd-' + areaID);
 
 let rojo=0, azul=0, gRojo=0, gAzul=0, tiempo=120, intervalo=null, round=1, wRojo=0, wAzul=0;
@@ -114,18 +128,15 @@ let clics = [];
 if (esJuez) {
     document.getElementById('marcador-ui').style.display = 'none';
     document.getElementById('juez-ui').style.display = 'flex';
-    canal.presence.enter({ rol: 'juez' });
-    document.getElementById('grid-juez').style.display = 'flex';
-    document.getElementById('juez-info').innerText = "ÁREA " + areaID + " - JUEZ CONECTADO";
 }
 
 canal.subscribe('p', (msg) => {
-    const data = msg.data;
-    const item = { e: data.e, pts: data.p, j: msg.connectionId, t: Date.now() };
+    const d = msg.data;
+    const item = { e: d.e, pts: d.p, j: msg.connectionId, t: Date.now() };
     clics.push(item);
     clics = clics.filter(c => (Date.now() - c.t) < 2000);
-    const juecesDistintos = new Set(clics.filter(c => c.e === item.e && c.pts === item.pts).map(c => c.j));
-    if (juecesDistintos.size >= 2) {
+    const coinciden = new Set(clics.filter(c => c.e === item.e && c.pts === item.pts).map(c => c.j));
+    if (coinciden.size >= 2) {
         if(item.e === 'rojo') rojo += item.pts; else azul += item.pts;
         clics = clics.filter(c => c.e !== item.e);
         actualizar();
@@ -137,8 +148,9 @@ function actualizar(){
     document.getElementById("gRojo").innerText=gRojo; document.getElementById("gAzul").innerText=gAzul;
     document.getElementById("tiempo").innerText=tiempo; document.getElementById("round").innerText=round;
     
-    if(gRojo >= 5) { alert("ROJO pierde round por 5 Gam-jeoms"); ganarRound('azul'); }
-    else if(gAzul >= 5) { alert("AZUL pierde round por 5 Gam-jeoms"); ganarRound('rojo'); }
+    // REGLA 5 GAM-JEOM = PIERDE ROUND
+    if(gRojo >= 5) { alert("ROJO descalificado del round (5 Gam-jeom)"); ganarRound('azul'); }
+    else if(gAzul >= 5) { alert("AZUL descalificado del round (5 Gam-jeom)"); ganarRound('rojo'); }
 }
 
 function ganarRound(color){
@@ -149,25 +161,20 @@ function ganarRound(color){
         alert("GANADOR FINAL: " + color.toUpperCase()); 
         resetMatch(); 
     } else {
-        alert("Siguiente Round");
+        alert("Fin del Round. Iniciando siguiente.");
         round++; rojo=0; azul=0; gRojo=0; gAzul=0; tiempo=120; actualizar();
     }
 }
 
-function penal(e){ 
-    if(e==='rojo'){ gRojo++; azul++; } else { gAzul++; rojo++; } 
-    actualizar(); 
-}
-
+function penal(e){ if(e==='rojo'){ gRojo++; azul++; } else { gAzul++; rojo++; } actualizar(); }
 function restar(e){ if(e==='rojo'){ if(rojo>0)rojo--; } else { if(azul>0)azul--; } actualizar(); }
-function ajustarTiempo(){ const t = document.getElementById("t-manual").value; if(t!=="") { tiempo=parseInt(t); actualizar(); } }
 function start(){ if(!intervalo) intervalo=setInterval(()=>{ if(tiempo>0){ tiempo--; actualizar(); } else { finalizarRound(); } },1000); }
 function pause(){ clearInterval(intervalo); intervalo=null; }
 
 function finalizarRound(){
     if(rojo > azul) ganarRound('rojo');
     else if(azul > rojo) ganarRound('azul');
-    else alert("Empate en puntos.");
+    else alert("Empate. Se requiere decisión.");
 }
 
 function resetMatch(){ pause(); round=1; rojo=0; azul=0; gRojo=0; gAzul=0; wRojo=0; wAzul=0; tiempo=120; actualizar(); actualizarRounds(); }
@@ -183,12 +190,12 @@ function setNombres(){
 }
 
 function enviarPunto(equipo, puntos) {
-    if (navigator.vibrate) navigator.vibrate(60);
+    if (navigator.vibrate) navigator.vibrate(50);
     canal.publish('p', { e: equipo, p: puntos });
 }
 
 const urlBase = window.location.href.split('?')[0];
-new QRCode(document.getElementById("qrcode"), { text: urlBase + "?mode=juez&area=" + areaID, width: 80, height: 80 });
+new QRCode(document.getElementById("qrcode"), { text: urlBase + "?mode=juez&area=" + areaID, width: 85, height: 85 });
 actualizar();
 </script>
 </body>
