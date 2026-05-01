@@ -24,21 +24,33 @@
         .lado { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position: relative; }
         .azul { background:#0033cc; }
         .rojo { background:#a00000; }
-        .score { font-size: clamp(100px, 18vw, 180px); font-weight: bold; line-height: 1; }
-        .nombre { font-size: 28px; margin-bottom: 5px; font-weight: bold; text-transform: uppercase; }
-        .gam { font-size: 18px; background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 20px; margin-bottom: 10px; }
+        
+        /* MARCAS DE AGUA */
+        .watermark { position: absolute; bottom: 20px; font-size: 14px; opacity: 0.3; font-weight: bold; pointer-events: none; font-family: sans-serif; letter-spacing: 2px; }
+        .wm-azul { left: 25px; }
+        .wm-rojo { right: 25px; }
+
+        .score { font-size: clamp(100px, 18vw, 180px); font-weight: bold; line-height: 1; z-index: 2; }
+        .nombre { font-size: 28px; margin-bottom: 5px; font-weight: bold; text-transform: uppercase; z-index: 2; }
+        .gam { font-size: 18px; background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 20px; margin-bottom: 10px; font-family: sans-serif; }
         
         .rounds-ganados { display: flex; gap: 10px; margin-bottom: 20px; }
         .dot { width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; }
-        .dot.active { background: yellow; border-color: yellow; }
+        .dot.active { background: yellow; border-color: yellow; box-shadow: 0 0 15px yellow; }
 
         .centro { width: 320px; background:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; border-left: 2px solid #333; border-right: 2px solid #333; }
+        
+        /* TÍTULO LIGA */
+        .titulo-liga { text-align: center; line-height: 1.1; margin-bottom: 15px; }
+        .t-liga { font-size: 14px; color: #ddd; letter-spacing: 2px; }
+        .t-tkd { font-size: 22px; color: white; display: block; }
         .t-bogota { font-size: 32px; color: #ff4500; display: block; font-weight: 900; }
-        .timer { background:yellow; color:black; font-size: 75px; padding: 5px 20px; margin: 5px; font-family: monospace; border-radius: 10px; }
+
+        .timer { background:yellow; color:black; font-size: 75px; padding: 5px 20px; margin: 5px; font-family: monospace; font-weight: bold; border-radius: 10px; }
         
         button { cursor:pointer; border:none; border-radius:5px; font-weight: bold; }
         .control { background:#444; color:white; width: 90%; padding:10px; margin:2px; font-size: 11px; }
-        .restar { background: none; color: #777; font-size: 11px; margin-top: 5px; border: 1px solid #333; padding: 4px 10px; }
+        .restar { background: none; color: #666; font-size: 11px; margin-top: 5px; border: 1px solid #333; padding: 5px 12px; border-radius: 10px; z-index: 2; }
         input { width: 85%; margin: 2px; padding: 8px; border-radius: 4px; border: none; background: #222; color: white; text-align: center; }
 
         /* JUEZ */
@@ -52,15 +64,16 @@
 
 <div id="bloqueo-seguridad">
     <div class="lock-box">
-        <div style="font-size: 24px; color: white;">LIGA DE BOGOTÁ</div>
+        <div class="t-tkd">LIGA DE BOGOTÁ</div>
         <input type="password" id="pass-field" placeholder="Código de Acceso" style="margin-top:20px; padding:10px; width:200px;">
         <br><br>
-        <button class="control" style="background:#ff4500; height:45px;" onclick="verificarAcceso()">ACTIVAR</button>
+        <button class="control" style="background:#ff4500; height:45px;" onclick="verificarAcceso()">ACTIVAR SISTEMA</button>
     </div>
 </div>
 
 <div id="marcador-ui" style="display: flex; width: 100%; visibility: hidden;">
     <div class="lado azul">
+        <div class="watermark wm-azul">LIGA TKD BOGOTÁ</div>
         <div class="rounds-ganados" id="roundsAzul"><div class="dot"></div><div class="dot"></div></div>
         <div class="nombre" id="nAzul">AZUL</div>
         <div class="score" id="azul">0</div>
@@ -70,8 +83,12 @@
     </div>
 
     <div class="centro">
-        <div class="t-bogota">BOGOTÁ</div>
-        <div style="font-size: 12px;">ROUND <span id="round">1</span></div>
+        <div class="titulo-liga">
+            <span class="t-liga">LIGA DE</span>
+            <span class="t-tkd">TAEKWONDO</span>
+            <span class="t-bogota">BOGOTÁ</span>
+        </div>
+        <div style="font-size: 12px; color: yellow;">ÁREA <span id="displayArea">1</span> - ROUND <span id="round">1</span></div>
         <div class="timer" id="tiempo">120</div>
         
         <div style="display:flex; width:92%; gap:4px;">
@@ -95,6 +112,7 @@
     </div>
 
     <div class="lado rojo">
+        <div class="watermark wm-rojo">LIGA TKD BOGOTÁ</div>
         <div class="rounds-ganados" id="roundsRojo"><div class="dot"></div><div class="dot"></div></div>
         <div class="nombre" id="nRojo">ROJO</div>
         <div class="score" id="rojo">0</div>
@@ -122,7 +140,7 @@
 </div>
 
 <script>
-const CLAVE_MAESTRA = "BOGOTA2026"; // <--- Tu Clave[cite: 1]
+const CLAVE_MAESTRA = "BOGOTA2026"; 
 const API_KEY = 'lghMsA.rFblDA:Uo_Ya0lwt-osgx2EhIM1egWJb1pTR4seB8MQKN_Rqp8'; 
 
 function verificarAcceso() {
@@ -135,7 +153,9 @@ function verificarAcceso() {
 
 const params = new URLSearchParams(window.location.search);
 const areaID = params.get('area') || '1';
+document.getElementById("displayArea").innerText = areaID;
 const esJuez = window.innerWidth < 600 || params.get('mode') === 'juez';
+
 const ably = new Ably.Realtime({ key: API_KEY });
 const canal = ably.channels.get('tkd-' + areaID);
 
@@ -182,6 +202,10 @@ function setNombres(){
     document.getElementById("nAzul").innerText=document.getElementById("aname").value||"AZUL";
 }
 function resetMatch(){ location.reload(); }
+function actualizarRounds(){
+    const da = document.getElementById("roundsAzul").children; const dr = document.getElementById("roundsRojo").children;
+    for(let i=0; i<2; i++){ da[i].className = i<wAzul?"dot active":"dot"; dr[i].className = i<wRojo?"dot active":"dot"; }
+}
 function enviarPunto(equipo, puntos) { if (navigator.vibrate) navigator.vibrate(50); canal.publish('p', { e: equipo, p: puntos }); }
 
 const urlBase = window.location.href.split('?')[0];
