@@ -58,7 +58,7 @@
         .restar { background: none; color: #666; font-size: 11px; margin-top: 5px; border: 1px solid #333; padding: 5px 12px; border-radius: 10px; }
         input { width: 85%; margin: 2px; padding: 8px; border-radius: 4px; border: none; background: #222; color: white; text-align: center; }
 
-        /* JUEZ - DOS COLUMNAS ANCHAS OPTIMIZADAS CON 5 BOTONES */
+        /* JUEZ - DOS COLUMNAS ANCHAS CON 5 BOTONES */
         #juez-ui { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; flex-direction: row; }
         .col-juez { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 6px; }
         .btn-tec { width: 100%; flex: 1; color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); }
@@ -143,12 +143,10 @@
 const CLAVE_MAESTRA = "BOGOTA2026"; 
 const API_KEY = 'lghMsA.rFblDA:Uo_Ya0lwt-osgx2EhIM1egWJb1pTR4seB8MQKN_Rqp8'; 
 
-// CAPTURA CORRECTA DE PARÁMETROS DE ÁREA
 const params = new URLSearchParams(window.location.search);
 const areaID = params.get('area') || '1';
 const esJuez = window.innerWidth < 600 || params.get('mode') === 'juez';
 
-// COMPORTAMIENTO DE SEGURIDAD SEGÚN EL ROL
 if(esJuez) {
     document.getElementById("bloqueo-seguridad").style.display = "none";
     document.getElementById("juez-ui").style.display = "flex";
@@ -161,17 +159,18 @@ function verificarAcceso() {
     } else { alert("Clave Incorrecta"); }
 }
 
-// INICIALIZACIÓN DEL ÁREA ASIGNADA
 document.getElementById("displayArea").innerText = areaID;
 const ably = new Ably.Realtime({ key: API_KEY });
 const canal = ably.channels.get('tkd-' + areaID);
 
 let rojo=0, azul=0, gRojo=0, gAzul=0, tiempo=120, intervalo=null, round=1, wRojo=0, wAzul=0, clics=[];
 
+// LÓGICA ESTRICTA PARA 2 JUECES
 canal.subscribe('p', (msg) => {
     const d = msg.data;
     clics.push({ e: d.e, pts: d.p, j: msg.connectionId, t: Date.now() });
     clics = clics.filter(c => (Date.now() - c.t) < 2000); 
+    
     const coinciden = new Set(clics.filter(c => c.e === d.e && c.pts === d.p).map(c => c.j));
     if (coinciden.size >= 2) {
         if(d.e === 'rojo') rojo += d.p; else azul += d.p;
@@ -201,7 +200,19 @@ function ajustarTiempo() {
     const val = document.getElementById("t-manual").value;
     if (val !== "") { tiempo = parseInt(val); actualizar(); document.getElementById("t-manual").value = ""; }
 }
-function finalizarRound(){ if(rojo > azul) ganarRound('rojo'); else if(azul > rojo) ganarRound('azul'); else alert("Empate"); }
+
+// SOLUCIÓN AL EMPATE: ACTIVA ROUND DE ORO AUTOMÁTICO
+function finalizarRound(){ 
+    if(rojo > azul) { ganarRound('rojo'); } 
+    else if(azul > rojo) { ganarRound('azul'); } 
+    else { 
+        pause();
+        alert("¡Empate! Iniciando Round de Oro (1 Minuto)"); 
+        tiempo = 60; 
+        actualizar(); 
+    } 
+}
+
 function penal(e){ if(e==='rojo'){ gRojo++; azul++; } else { gAzul++; rojo++; } actualizar(); }
 function restar(e){ if(e==='rojo'){ if(rojo>0)rojo--; } else { if(azul>0)azul--; } actualizar(); }
 function setNombres(){
@@ -215,7 +226,6 @@ function actualizarRounds(){
 }
 function enviarPunto(equipo, puntos) { if (navigator.vibrate) navigator.vibrate(50); canal.publish('p', { e: equipo, p: puntos }); }
 
-// QR CONFIGURADO PARA LEER DINÁMICAMENTE EL ÁREA ACTUAL
 const urlBase = window.location.href.split('?')[0];
 new QRCode(document.getElementById("qrcode"), { text: urlBase + "?mode=juez&area=" + areaID, width: 80, height: 80 });
 actualizar();
