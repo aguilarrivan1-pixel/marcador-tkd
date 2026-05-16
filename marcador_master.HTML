@@ -83,8 +83,8 @@
             padding: 20px;
             position: relative;
         }
-        .side.b-side { background: #0033cc; }
-        .side.r-side { background: #a00000; }
+        .side.b-side { background: var(--accent-blue); }
+        .side.r-side { background: var(--accent-rojo); }
 
         .fighter-name-display {
             font-size: 28px;
@@ -104,17 +104,17 @@
             text-shadow: 0 4px 10px rgba(0,0,0,0.7);
         }
 
-        /* COLUMNA CENTRAL DEL MARCADOR */
+        /* COLUMNA CENTRAL CON DIFUMINADO HACIA ROJO Y AZUL */
         .center-column {
             width: 240px;
-            background: #000000;
-            border-left: 2px solid #222;
-            border-right: 2px solid #222;
+            background: linear-gradient(to right, rgba(0,51,204,0.4) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(160,0,0,0.4) 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
             padding: 15px 0;
+            position: relative;
+            z-index: 2;
         }
         .arena-title { font-size: 12px; color: var(--text-gray); letter-spacing: 2px; font-weight: bold; text-align: center; }
         .round-display { text-align: center; }
@@ -124,7 +124,7 @@
         .gamjeom-row { display: flex; justify-content: space-around; width: 100%; font-size: 12px; color: var(--text-gray); font-weight: bold; }
         .gamjeom-counter { font-size: 24px; color: white; font-weight: 900; margin-top: 2px; }
 
-        /* JUEZ DE MESA: OVERRIDES MANUALES */
+        /* JUEZ DE MESA */
         .mesa-controls {
             background: var(--panel-bg);
             border: 1px solid var(--panel-border);
@@ -139,21 +139,14 @@
         .btn-m:hover { filter: brightness(1.2); }
         .gam-mesa-row { display: flex; gap: 8px; }
         .btn-gam-m { flex: 1; background: #2d3247; color: white; border: 1px solid var(--panel-border); padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px;}
-        .btn-gam-m:hover { background: #373e56; }
 
-        /* LADO DERECHO: CONTEXTO GENERAL */
-        .right-panels {
-            width: 380px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+        /* LADO DERECHO */
+        .right-panels { width: 380px; display: flex; flex-direction: column; gap: 12px; }
         .panel-box { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; }
         .match-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
         .btn-ctrl { padding: 10px; border-radius: 6px; border: none; font-weight: bold; color: white; background: #2a2f42; cursor: pointer; font-size: 12px; text-transform: uppercase;}
         .btn-ctrl:hover { background: #373e56; }
         .btn-ctrl.start { background: #28a745; }
-        .btn-ctrl.start:hover { background: #218838; }
         .btn-ctrl.doctor { background: #d9534f; grid-column: span 2; font-size: 13px; letter-spacing: 1px;}
 
         .tabs-header { display: flex; border-bottom: 2px solid var(--panel-border); margin-bottom: 12px; font-size: 11px; }
@@ -168,9 +161,9 @@
         .history-list { max-height: 140px; overflow-y: auto; font-size: 11px; font-family: monospace; background: #12141c; padding: 6px; border-radius: 4px; border: 1px solid var(--panel-border); }
         .history-item { padding: 4px; border-bottom: 1px solid #1a1d26; display: flex; justify-content: space-between; }
 
-        /* LOG FLOTANTE ANIMADO */
+        /* LOG CONTENEDOR FLOTANTE DE PUNTOS */
         .log-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 6px; pointer-events: none; width: 280px; }
-        .log-card { background: rgba(20, 24, 36, 0.95); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 12px; border-left: 5px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); animation: slideIn 0.3s ease forwards; }
+        .log-card { background: rgba(20, 24, 36, 0.95); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 12px; border-left: 5px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); animation: slideIn 0.3s ease forwards; color: white;}
         .log-card.azul { border-left-color: #0033cc; }
         .log-card.rojo { border-left-color: #a00000; }
         .log-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
@@ -186,7 +179,7 @@
         .judge-status-dot.connected { background: #28a745; box-shadow: 0 0 6px #28a745; }
         .qr-area { display: flex; justify-content: space-around; background: white; padding: 8px; border-radius: 6px; margin-top: 10px; }
 
-        /* INTERFAZ MÓVIL CLÁSICA RESTAURADA PARA JUECES */
+        /* INTERFAZ MÓVIL CLÁSICA */
         #juez-ui { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:#12141c; z-index:99999; flex-direction: column; padding: 10px; box-sizing: border-box;}
         .juez-header { background: #000; padding: 8px; text-align: center; font-weight: bold; font-size: 14px; border-radius: 6px; margin-bottom: 10px; color: #ffaa00; border: 1px solid var(--panel-border);}
         .grid-juez { display: grid; grid-template-columns: 1fr 1fr; flex: 1; gap: 10px; }
@@ -364,11 +357,10 @@
 </div>
 
 <script>
-const API_KEY = 'lghMsA.rFblDA:Uo_Ya0lwt-osgx2EhIM1egWJb1pTR4seB8MQKN_Rqp8'; // Pon aquí tu Key de Ably
+const API_KEY = 'lghMsA.rFblDA:Uo_Ya0lwt-osgx2EhIM1egWJb1pTR4seB8MQKN_Rqp8'; 
 
-// DETECCIÓN INDEPENDIENTE DE ÁREA POR URL BLINDADA
 const params = new URLSearchParams(window.location.search);
-const areaID = params.get('area') || '1'; // Si no hay parámetro, por defecto es Área 1
+const areaID = params.get('area') || '1'; 
 const esJuez = window.innerWidth < 768 || params.get('mode') === 'juez';
 
 document.getElementById("displayArea").innerText = areaID;
@@ -380,7 +372,6 @@ if(esJuez) {
     document.getElementById("juez-ui").style.display = "flex";
 }
 
-// CONEXIÓN DIRECTA EXCLUSIVA AL CANAL DE ESTA ÁREA
 const ably = new Ably.Realtime({ key: API_KEY });
 const canal = ably.channels.get('tkd-area-' + areaID); 
 
@@ -397,7 +388,6 @@ const ICONOS_SVG = {
     6: `<svg viewBox="0 0 24 24" width="28" height="28" fill="white"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>` 
 };
 
-// COINCIDENCIAS E INYECCIÓN DE PUNTAJES FILTRADOS
 canal.subscribe('p', (msg) => {
     const d = msg.data;
     const jId = msg.connectionId ? msg.connectionId.substring(0, 3) : "Jz"; 
@@ -426,11 +416,8 @@ function efectuarPunto(equipo, puntos, juecesTxt) {
     actualizar();
 }
 
+// NUEVO DISPARADOR DE LOG: INYECTA LA ANIMACIÓN EN MESA Y TV EN SIMULTÁNEO
 function dispararLogVisual(equipo, puntos, juecesTxt) {
-    const contenedor = document.getElementById("visual-log-container");
-    const card = document.createElement("div");
-    card.className = `log-card ${equipo}`;
-    
     let nombreTecnica = "Ataque";
     if(puntos === 1) nombreTecnica = "Marcaje de Puño";
     if(puntos === 2) nombreTecnica = "Ataque al Peto";
@@ -438,7 +425,7 @@ function dispararLogVisual(equipo, puntos, juecesTxt) {
     if(puntos === 4) nombreTecnica = "Giro Técnico Peto";
     if(puntos === 6) nombreTecnica = "Giro Técnico Cabeza";
 
-    card.innerHTML = `
+    const estructuraCardHTML = `
         <div class="log-icon">${ICONOS_SVG[puntos] || ''}</div>
         <div class="log-info">
             <div class="log-title">${nombreTecnica}</div>
@@ -446,7 +433,27 @@ function dispararLogVisual(equipo, puntos, juecesTxt) {
         </div>
         <div class="log-points">+${puntos}</div>
     `;
-    contenedor.appendChild(card);
+
+    // Renderizar en Panel Operador
+    inyectarCardLog(document.getElementById("visual-log-container"), equipo, estructuraCardHTML);
+
+    // Renderizar de forma remota en el TV si está activo
+    if (ventanaTV && !ventanaTV.closed) {
+        inyectarCardLog(ventanaTV.document.getElementById("tv-visual-log-container"), equipo, estructuraCardHTML);
+    }
+}
+
+function inyectarCardLog(contenedorObjetivo, equipo, contenidoHTML) {
+    if(!contenedorObjetivo) return;
+    const card = document.createElement("div");
+    card.className = `log-card ${equipo}`;
+    card.style.cssText = `
+        background: rgba(20, 24, 36, 0.95); border-radius: 8px; padding: 8px 12px;
+        display: flex; align-items: center; gap: 12px; border-left: 5px solid ${equipo==='azul'?'#0033cc':'#a00000'};
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5); animation: slideIn 0.3s ease forwards; color: white; margin-bottom: 5px;
+    `;
+    card.innerHTML = contenidoHTML;
+    contenedorObjetivo.appendChild(card);
     setTimeout(() => { card.remove(); }, 3000);
 }
 
@@ -468,14 +475,11 @@ function registrarEnHistorial(equipo, puntos, procedencia) {
     lista.insertBefore(item, lista.firstChild);
 }
 
-function puntoMesa(equipo, puntos) {
-    efectuarPunto(equipo, puntos, 'Mesa de Control');
-}
+function puntoMesa(equipo, puntos) { efectuarPunto(equipo, puntos, 'Mesa de Control'); }
 
 function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    
     if(tabName === 'rules') {
         document.getElementById('tab-btn-rules').classList.add('active');
         document.getElementById('tab-rules').classList.add('active');
@@ -487,7 +491,7 @@ function switchTab(tabName) {
 
 function editarTiempoManual() {
     pause();
-    let entrada = prompt("Modificar tiempo del combate (Ejemplo: 2:00, 1:30, 0:45):", document.getElementById("tiempo").innerText.replace("MED ", ""));
+    let entrada = prompt("Modificar tiempo del combate (Ejemplo: 2:00, 1:30):", document.getElementById("tiempo").innerText.replace("MED ", ""));
     if(entrada && entrada.includes(":")) {
         let partes = entrada.split(":");
         let m = parseInt(partes[0]) || 0;
@@ -545,7 +549,6 @@ function actualizar(){
 function ganarRound(color){
     pause();
     if(color === 'rojo') wRojo++; else wAzul++;
-    
     if(wRojo === 2 || wAzul === 2) { 
         mostrarPantallaGanador(color); 
     } else { 
@@ -558,7 +561,6 @@ function ganarRound(color){
 function mostrarPantallaGanador(color) {
     const textoGanador = document.getElementById("ganador-texto");
     const fondoGanador = document.getElementById("ganador-fondo");
-    
     if(color === 'azul') {
         textoGanador.innerText = document.getElementById("lbl-name-azul").innerText;
         fondoGanador.style.backgroundColor = "#0033cc";
@@ -572,28 +574,19 @@ function mostrarPantallaGanador(color) {
 function start(){ 
     if(!intervalo) {
         intervalo = setInterval(() => { 
-            if(tiempo > 0){ 
-                tiempo--; 
-                actualizar(); 
-            } else { 
+            if(tiempo > 0){ tiempo--; actualizar(); } else { 
                 if(enModoDoctor) {
-                    pause();
-                    enModoDoctor = false;
+                    pause(); enModoDoctor = false;
                     alert("Tiempo médico finalizado. Reanude el combate.");
                     cambiarConfigTiempo();
-                } else {
-                    finalizarRound(); 
-                }
+                } else { finalizarRound(); }
             } 
         }, 1000);
         document.getElementById("btn-play").innerText = "PAUSE ROUND";
         document.getElementById("btn-play").style.backgroundColor = "#ffaa00";
-    } else {
-        pause();
-    }
+    } else { pause(); }
 }
 
-// DETENER CRONOMETRO
 function pause(){ 
     clearInterval(intervalo); 
     intervalo = null; 
@@ -607,8 +600,7 @@ function finalizarRound(){
     else { 
         pause();
         alert("¡Empate! Iniciando Round de Oro (1 minuto)"); 
-        tiempo = 60; 
-        actualizar(); 
+        tiempo = 60; actualizar(); 
     } 
 }
 
@@ -631,16 +623,11 @@ function setNombres(){
 }
 
 function cambiarModoJueces() { modoJueces = parseInt(document.getElementById("judge-select").value); }
-// AJUSTAR CONFIGURACIÓN DE TIEMPO BASE
 function cambiarConfigTiempo() { tiempo = parseInt(document.getElementById("time-select").value); enModoDoctor = false; actualizar(); }
 function resetMatch(){ location.reload(); }
+function enviarPunto(equipo, puntos) { if (navigator.vibrate) navigator.vibrate(50); canal.publish('p', { e: equipo, p: puntos }); }
 
-// TRANSMISION DESDE EL CONTROL MÓVIL CLÁSICO RESTAURADO
-function enviarPunto(equipo, puntos) { 
-    if (navigator.vibrate) navigator.vibrate(50); // Feedback táctil clásico
-    canal.publish('p', { e: equipo, p: puntos }); 
-}
-
+// EMISIÓN SEGUNDA PANTALLA CON DISEÑO OFICIAL MEJORADO (GRADIENTES + ALERTAS + LOGO)
 function abrirPantallaTV() {
     if(ventanaTV && !ventanaTV.closed) { ventanaTV.focus(); return; }
     ventanaTV = window.open("", "TKDBogotaTVStream", "width=1280,height=720");
@@ -649,31 +636,52 @@ function abrirPantallaTV() {
         <head>
             <title>TAEKWONDO DIGITAL SCOREBOARD - LIGA DE BOGOTÁ</title>
             <style>
-                body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+                body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none;}
+                
+                /* CABECERA INSTITUCIONAL EN EL TELEVISOR */
+                .tv-header { background: #07090e; text-align: center; font-weight: 800; font-size: 3.5vh; padding: 1.5vh 0; color: #ffffff; border-bottom: 2px solid #2a2f42; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+                
+                .tv-main-frame { display: flex; flex: 1; position: relative; }
                 .side { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-                .side.b { background: #0033cc; } .side.r { background: #a00000; }
-                .name { font-size: 5vh; font-weight: 800; text-transform: uppercase; text-shadow: 0 4px 6px rgba(0,0,0,0.6); }
-                .score { font-size: 35vh; font-family: 'Arial Black', sans-serif; font-weight: 900; text-shadow: 0 8px 15px rgba(0,0,0,0.8); }
-                .center { width: 25vw; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 4vh 0; border-left: 4px solid #222; border-right: 4px solid #222; }
+                .side.b { background: #0033cc; } 
+                .side.r { background: #a00000; }
+                .name { font-size: 6vh; font-weight: 800; text-transform: uppercase; text-shadow: 0 4px 6px rgba(0,0,0,0.6); letter-spacing: 1px;}
+                .score { font-size: 36vh; font-family: 'Arial Black', sans-serif; font-weight: 900; text-shadow: 0 8px 15px rgba(0,0,0,0.8); line-height: 0.8;}
+                
+                /* COLUMNA CENTRAL CON GRADIENTE CONECTADO */
+                .center { 
+                    width: 25vw; 
+                    background: linear-gradient(to right, rgba(0,51,204,0.4) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(160,0,0,0.4) 100%);
+                    display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 4vh 0; 
+                }
                 .lbl { font-size: 2.5vh; color: #a0a5b5; font-weight: bold; letter-spacing: 3px; }
                 .r-num { font-size: 8vh; font-weight: 900; color: #ffaa00; }
-                .time { background: #151821; border: 4px solid #ffaa00; font-size: 11vh; padding: 1vh 3vw; border-radius: 12px; font-family: monospace; font-weight: bold; }
+                .time { background: #151821; border: 4px solid #ffaa00; font-size: 11vh; padding: 1vh 3vw; border-radius: 12px; font-family: monospace; font-weight: bold; box-shadow: 0 0 20px rgba(255,170,0,0.3);}
                 .gam-box { display: flex; justify-content: space-around; width: 100%; text-align: center; font-size: 2.2vh; color: #a0a5b5; font-weight: bold; }
                 .gam-num { font-size: 5vh; color: #fff; font-weight: 900; }
+
+                /* CONTENEDOR DE ALERTAS DE PUNTOS EN EL TV */
+                .tv-log-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; width: 320px; }
+                @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
             </style>
         </head>
         <body>
-            <div class="side b"><div class="name" id="tv-name-azul">AZUL</div><div class="score" id="tv-azul">0</div></div>
-            <div class="center">
-                <div class="lbl">ÁREA ${areaID}</div>
-                <div style="text-align:center;"><div class="lbl">ROUND</div><div class="r-num" id="tv-round">1</div></div>
-                <div class="time" id="tv-tiempo">2:00</div>
-                <div class="gam-box">
-                    <div>GAM<div class="gam-num" id="tv-gAzul">0</div></div>
-                    <div>GAM<div class="gam-num" id="tv-gRojo">0</div></div>
+            <div class="tv-header">LIGA DE TAEKWONDO DE BOGOTÁ — ARENA MASTER</div>
+            <div class="tv-main-frame">
+                <div class="tv-log-container" id="tv-visual-log-container"></div>
+
+                <div class="side b"><div class="name" id="tv-name-azul">AZUL</div><div class="score" id="tv-azul">0</div></div>
+                <div class="center">
+                    <div class="lbl">ÁREA ${areaID}</div>
+                    <div style="text-align:center;"><div class="lbl">ROUND</div><div class="r-num" id="tv-round">1</div></div>
+                    <div class="time" id="tv-tiempo">2:00</div>
+                    <div class="gam-box">
+                        <div>GAM<div class="gam-num" id="tv-gAzul">0</div></div>
+                        <div>GAM<div class="gam-num" id="tv-gRojo">0</div></div>
+                    </div>
                 </div>
+                <div class="side r"><div class="name" id="tv-name-rojo">ROJO</div><div class="score" id="tv-rojo">0</div></div>
             </div>
-            <div class="side r"><div class="name" id="tv-name-rojo">ROJO</div><div class="score" id="tv-rojo">0</div></div>
         </body>
         </html>
     `);
@@ -681,7 +689,6 @@ function abrirPantallaTV() {
     actualizar();
 }
 
-// CONFIGURACIÓN DINÁMICA DEL CÓDIGO QR PARA GENERACIÓN DE CADA ÁREA INDEPENDIENTE
 const urlBase = window.location.href.split('?')[0];
 new QRCode(document.getElementById("qrcode"), { text: urlBase + "?mode=juez&area=" + areaID, width: 90, height: 90 });
 actualizar();
