@@ -305,11 +305,7 @@
                     </div>
                     <div class="config-row">
                         <label>Duración del Round:</label>
-                        <select id="time-select" onchange="cambiarConfigTiempo()">
-                            <option value="120" selected>2:00 Minutos</option>
-                            <option value="90">1:30 Minutos</option>
-                            <option value="60">1:00 Minuto</option>
-                        </select>
+                        <input type="text" id="time-input" value="2:00" placeholder="Ej: 1:30 o 2:00" oninput="cambiarConfigTiempo()" style="width: 140px; text-align: center; font-weight: bold;">
                     </div>
                     <div class="config-row">
                         <label>Límite Gam-jeom:</label>
@@ -416,7 +412,6 @@ function efectuarPunto(equipo, puntos, juecesTxt) {
     actualizar();
 }
 
-// NUEVO DISPARADOR DE LOG: INYECTA LA ANIMACIÓN EN MESA Y TV EN SIMULTÁNEO
 function dispararLogVisual(equipo, puntos, juecesTxt) {
     let nombreTecnica = "Ataque";
     if(puntos === 1) nombreTecnica = "Marcaje de Puño";
@@ -434,10 +429,8 @@ function dispararLogVisual(equipo, puntos, juecesTxt) {
         <div class="log-points">+${puntos}</div>
     `;
 
-    // Renderizar en Panel Operador
     inyectarCardLog(document.getElementById("visual-log-container"), equipo, estructuraCardHTML);
 
-    // Renderizar de forma remota en el TV si está activo
     if (ventanaTV && !ventanaTV.closed) {
         inyectarCardLog(ventanaTV.document.getElementById("tv-visual-log-container"), equipo, estructuraCardHTML);
     }
@@ -491,7 +484,7 @@ function switchTab(tabName) {
 
 function editarTiempoManual() {
     pause();
-    let entrada = prompt("Modificar tiempo del combate (Ejemplo: 2:00, 1:30):", document.getElementById("tiempo").innerText.replace("MED ", ""));
+    let entrada = prompt("Modificar tiempo del combate de forma rápida (Ejemplo: 2:00, 1:45):", document.getElementById("tiempo").innerText.replace("MED ", ""));
     if(entrada && entrada.includes(":")) {
         let partes = entrada.split(":");
         let m = parseInt(partes[0]) || 0;
@@ -623,11 +616,24 @@ function setNombres(){
 }
 
 function cambiarModoJueces() { modoJueces = parseInt(document.getElementById("judge-select").value); }
-function cambiarConfigTiempo() { tiempo = parseInt(document.getElementById("time-select").value); enModoDoctor = false; actualizar(); }
+
+// LÓGICA DE TIEMPO PERSONALIZADO LIBRE DESDE LA BARRA LATERAL
+function cambiarConfigTiempo() { 
+    if(intervalo) return; // No alterar si el cronómetro está corriendo
+    let entrada = document.getElementById("time-input").value;
+    if(entrada && entrada.includes(":")) {
+        let partes = entrada.split(":");
+        let m = parseInt(partes[0]) || 0;
+        let s = parseInt(partes[1]) || 0;
+        tiempo = (m * 60) + s;
+        enModoDoctor = false;
+        actualizar();
+    }
+}
+
 function resetMatch(){ location.reload(); }
 function enviarPunto(equipo, puntos) { if (navigator.vibrate) navigator.vibrate(50); canal.publish('p', { e: equipo, p: puntos }); }
 
-// EMISIÓN SEGUNDA PANTALLA CON DISEÑO OFICIAL MEJORADO (GRADIENTES + ALERTAS + LOGO)
 function abrirPantallaTV() {
     if(ventanaTV && !ventanaTV.closed) { ventanaTV.focus(); return; }
     ventanaTV = window.open("", "TKDBogotaTVStream", "width=1280,height=720");
@@ -637,18 +643,12 @@ function abrirPantallaTV() {
             <title>TAEKWONDO DIGITAL SCOREBOARD - LIGA DE BOGOTÁ</title>
             <style>
                 body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none;}
-                
-                /* CABECERA INSTITUCIONAL EN EL TELEVISOR */
                 .tv-header { background: #07090e; text-align: center; font-weight: 800; font-size: 3.5vh; padding: 1.5vh 0; color: #ffffff; border-bottom: 2px solid #2a2f42; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-                
                 .tv-main-frame { display: flex; flex: 1; position: relative; }
                 .side { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-                .side.b { background: #0033cc; } 
-                .side.r { background: #a00000; }
+                .side.b { background: #0033cc; } .side.r { background: #a00000; }
                 .name { font-size: 6vh; font-weight: 800; text-transform: uppercase; text-shadow: 0 4px 6px rgba(0,0,0,0.6); letter-spacing: 1px;}
                 .score { font-size: 36vh; font-family: 'Arial Black', sans-serif; font-weight: 900; text-shadow: 0 8px 15px rgba(0,0,0,0.8); line-height: 0.8;}
-                
-                /* COLUMNA CENTRAL CON GRADIENTE CONECTADO */
                 .center { 
                     width: 25vw; 
                     background: linear-gradient(to right, rgba(0,51,204,0.4) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(160,0,0,0.4) 100%);
@@ -659,8 +659,6 @@ function abrirPantallaTV() {
                 .time { background: #151821; border: 4px solid #ffaa00; font-size: 11vh; padding: 1vh 3vw; border-radius: 12px; font-family: monospace; font-weight: bold; box-shadow: 0 0 20px rgba(255,170,0,0.3);}
                 .gam-box { display: flex; justify-content: space-around; width: 100%; text-align: center; font-size: 2.2vh; color: #a0a5b5; font-weight: bold; }
                 .gam-num { font-size: 5vh; color: #fff; font-weight: 900; }
-
-                /* CONTENEDOR DE ALERTAS DE PUNTOS EN EL TV */
                 .tv-log-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; width: 320px; }
                 @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
             </style>
@@ -669,7 +667,6 @@ function abrirPantallaTV() {
             <div class="tv-header">LIGA DE TAEKWONDO DE BOGOTÁ</div>
             <div class="tv-main-frame">
                 <div class="tv-log-container" id="tv-visual-log-container"></div>
-
                 <div class="side b"><div class="name" id="tv-name-azul">AZUL</div><div class="score" id="tv-azul">0</div></div>
                 <div class="center">
                     <div class="lbl">ÁREA ${areaID}</div>
