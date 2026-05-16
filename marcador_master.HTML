@@ -120,6 +120,32 @@
         .round-display { text-align: center; }
         .round-lbl { font-size: 11px; color: var(--text-gray); font-weight: bold; }
         .round-num { font-size: 36px; font-weight: 900; color: #ffaa00; margin-top: -2px; }
+        
+        /* INDICADORES DE ROUNDS GANADOS */
+        .rounds-won-container { display: flex; gap: 20px; justify-content: center; margin-top: 2px; margin-bottom: 5px; }
+        .rw-dot { font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 4px; background: #222633; border: 1px solid var(--panel-border); color: #666; }
+        .rw-dot.b-won { background: #0033cc; border-color: #3366ff; color: white; box-shadow: 0 0 8px rgba(0,51,204,0.6); }
+        .rw-dot.r-won { background: #a00000; border-color: #ff3333; color: white; box-shadow: 0 0 8px rgba(160,0,0,0.6); }
+
+        /* NUEVO PANEL FLOTANTE DE DECISIÓN POR SUPERIORIDAD (SOLO MESA) */
+        .superiority-box {
+            display: none; /* Se activa dinámicamente por JS */
+            flex-direction: column;
+            gap: 6px;
+            background: #151821;
+            border: 2px solid #ffaa00;
+            padding: 8px;
+            border-radius: 8px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.4);
+        }
+        .sup-title { font-size: 10px; font-weight: bold; color: #ffaa00; text-transform: uppercase; letter-spacing: 1px; }
+        .sup-buttons { display: flex; gap: 6px; }
+        .btn-sup { flex: 1; padding: 6px; font-size: 11px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; color: white; text-transform: uppercase; }
+        .btn-sup.b { background: #0033cc; box-shadow: 0 0 6px rgba(0,51,204,0.5); }
+        .btn-sup.r { background: #a00000; box-shadow: 0 0 6px rgba(160,0,0,0.5); }
+
         .timer-display { background: #151821; border: 2px solid #ffaa00; color: white; font-size: 54px; padding: 4px 15px; border-radius: 8px; font-family: monospace; font-weight: bold; box-shadow: 0 0 15px rgba(255,170,0,0.2); cursor: pointer; }
         .gamjeom-row { display: flex; justify-content: space-around; width: 100%; font-size: 12px; color: var(--text-gray); font-weight: bold; }
         .gamjeom-counter { font-size: 24px; color: white; font-weight: 900; margin-top: 2px; }
@@ -233,6 +259,20 @@
                         <div class="round-lbl">ROUND</div>
                         <div class="round-num" id="round">1</div>
                     </div>
+                    
+                    <div class="rounds-won-container">
+                        <div class="rw-dot" id="rw-azul">AZUL: 0</div>
+                        <div class="rw-dot" id="rw-rojo">ROJO: 0</div>
+                    </div>
+
+                    <div class="superiority-box" id="panel-superioridad">
+                        <div class="sup-title">Decisión por Superioridad</div>
+                        <div class="sup-buttons">
+                            <button class="btn-sup b" onclick="decidirSuperioridad('azul')">Azul</button>
+                            <button class="btn-sup r" onclick="decidirSuperioridad('rojo')">Rojo</button>
+                        </div>
+                    </div>
+
                     <div class="timer-display" id="tiempo" onclick="editarTiempoManual()">2:00</div>
                     <div class="gamjeom-row">
                         <div style="text-align: center;">GAM<div class="gamjeom-counter" id="gAzul">0</div></div>
@@ -491,6 +531,7 @@ function editarTiempoManual() {
         let s = parseInt(partes[1]) || 0;
         tiempo = (m * 60) + s;
         enModoDoctor = false;
+        document.getElementById("panel-superioridad").style.display = "none"; // Ocultar si cambian tiempo
         actualizar();
     }
 }
@@ -499,6 +540,7 @@ function activarDoctor() {
     pause();
     enModoDoctor = true;
     tiempo = 60; 
+    document.getElementById("panel-superioridad").style.display = "none";
     alert("¡Kye-shi! Tiempo Médico activado (Área " + areaID + ")");
     start();
 }
@@ -509,6 +551,13 @@ function actualizar(){
     document.getElementById("gRojo").innerText=gRojo; 
     document.getElementById("gAzul").innerText=gAzul;
     
+    const dAzul = document.getElementById("rw-azul");
+    const dRojo = document.getElementById("rw-rojo");
+    dAzul.innerText = `AZUL: ${wAzul}`;
+    dRojo.innerText = `ROJO: ${wRojo}`;
+    if(wAzul > 0) dAzul.classList.add("b-won"); else dAzul.classList.remove("b-won");
+    if(wRojo > 0) dRojo.classList.add("r-won"); else dRojo.classList.remove("r-won");
+
     let mins = Math.floor(tiempo / 60);
     let segs = tiempo % 60;
     let stringTiempo = `${mins}:${segs < 10 ? '0' : ''}${segs}`;
@@ -533,6 +582,13 @@ function actualizar(){
         ventanaTV.document.getElementById("tv-round").innerText = round;
         ventanaTV.document.getElementById("tv-name-azul").innerText = document.getElementById("lbl-name-azul").innerText;
         ventanaTV.document.getElementById("tv-name-rojo").innerText = document.getElementById("lbl-name-rojo").innerText;
+        
+        const tvDAzul = ventanaTV.document.getElementById("tv-rw-azul");
+        const tvDRojo = ventanaTV.document.getElementById("tv-rw-rojo");
+        tvDAzul.innerText = `AZUL: ${wAzul}`;
+        tvDRojo.innerText = `ROJO: ${wRojo}`;
+        if(wAzul > 0) tvDAzul.className = "rw-dot b-won"; else tvDAzul.className = "rw-dot";
+        if(wRojo > 0) tvDRojo.className = "rw-dot r-won"; else tvDRojo.className = "rw-dot";
     }
 
     const limiteGam = parseInt(document.getElementById("gamjeom-limit").value) || 5;
@@ -541,7 +597,10 @@ function actualizar(){
 
 function ganarRound(color){
     pause();
+    document.getElementById("panel-superioridad").style.display = "none"; // Asegurar ocultado
     if(color === 'rojo') wRojo++; else wAzul++;
+    actualizar();
+    
     if(wRojo === 2 || wAzul === 2) { 
         mostrarPantallaGanador(color); 
     } else { 
@@ -549,6 +608,11 @@ function ganarRound(color){
         round++; rojo=0; azul=0; gRojo=0; gAzul=0; 
         cambiarConfigTiempo(); 
     }
+}
+
+function decidirSuperioridad(color) {
+    registrarEnHistorial(color, 0, 'Decisión por Superioridad (Mesa)');
+    ganarRound(color);
 }
 
 function mostrarPantallaGanador(color) {
@@ -566,6 +630,7 @@ function mostrarPantallaGanador(color) {
 
 function start(){ 
     if(!intervalo) {
+        document.getElementById("panel-superioridad").style.display = "none";
         intervalo = setInterval(() => { 
             if(tiempo > 0){ tiempo--; actualizar(); } else { 
                 if(enModoDoctor) {
@@ -588,12 +653,13 @@ function pause(){
 }
 
 function finalizarRound(){ 
+    pause();
     if(rojo > azul) { ganarRound('rojo'); } 
     else if(azul > rojo) { ganarRound('azul'); } 
     else { 
-        pause();
-        alert("¡Empate! Iniciando Round de Oro (1 minuto)"); 
-        tiempo = 60; actualizar(); 
+        // CASO EMPATE ABSOLUTO AL ACABAR EL TIEMPO: Activar la pestaña de selección manual
+        document.getElementById("panel-superioridad").style.display = "flex";
+        alert("¡Empate detectado al finalizar el tiempo!\nLa Mesa Central debe definir el ganador por Superioridad.");
     } 
 }
 
@@ -617,9 +683,8 @@ function setNombres(){
 
 function cambiarModoJueces() { modoJueces = parseInt(document.getElementById("judge-select").value); }
 
-// LÓGICA DE TIEMPO PERSONALIZADO LIBRE DESDE LA BARRA LATERAL
 function cambiarConfigTiempo() { 
-    if(intervalo) return; // No alterar si el cronómetro está corriendo
+    if(intervalo) return; 
     let entrada = document.getElementById("time-input").value;
     if(entrada && entrada.includes(":")) {
         let partes = entrada.split(":");
@@ -627,6 +692,7 @@ function cambiarConfigTiempo() {
         let s = parseInt(partes[1]) || 0;
         tiempo = (m * 60) + s;
         enModoDoctor = false;
+        document.getElementById("panel-superioridad").style.display = "none";
         actualizar();
     }
 }
@@ -656,6 +722,12 @@ function abrirPantallaTV() {
                 }
                 .lbl { font-size: 2.5vh; color: #a0a5b5; font-weight: bold; letter-spacing: 3px; }
                 .r-num { font-size: 8vh; font-weight: 900; color: #ffaa00; }
+                
+                .rounds-won-container { display: flex; gap: 2vw; justify-content: center; margin-top: 1vh; margin-bottom: 1vh; }
+                .rw-dot { font-size: 2.2vh; font-weight: bold; padding: 0.5vh 1.5vw; border-radius: 6px; background: #151821; border: 2px solid #2a2f42; color: #555; }
+                .rw-dot.b-won { background: #0033cc; border-color: #3366ff; color: white; box-shadow: 0 0 12px rgba(0,51,204,0.8); }
+                .rw-dot.r-won { background: #a00000; border-color: #ff3333; color: white; box-shadow: 0 0 12px rgba(160,0,0,0.8); }
+
                 .time { background: #151821; border: 4px solid #ffaa00; font-size: 11vh; padding: 1vh 3vw; border-radius: 12px; font-family: monospace; font-weight: bold; box-shadow: 0 0 20px rgba(255,170,0,0.3);}
                 .gam-box { display: flex; justify-content: space-around; width: 100%; text-align: center; font-size: 2.2vh; color: #a0a5b5; font-weight: bold; }
                 .gam-num { font-size: 5vh; color: #fff; font-weight: 900; }
@@ -671,6 +743,12 @@ function abrirPantallaTV() {
                 <div class="center">
                     <div class="lbl">ÁREA ${areaID}</div>
                     <div style="text-align:center;"><div class="lbl">ROUND</div><div class="r-num" id="tv-round">1</div></div>
+                    
+                    <div class="rounds-won-container">
+                        <div class="rw-dot" id="tv-rw-azul">AZUL: 0</div>
+                        <div class="rw-dot" id="tv-rw-rojo">ROJO: 0</div>
+                    </div>
+
                     <div class="time" id="tv-tiempo">2:00</div>
                     <div class="gam-box">
                         <div>GAM<div class="gam-num" id="tv-gAzul">0</div></div>
